@@ -56,11 +56,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            SizedBox(height: 20),
             Center(
+      
               child: SizedBox(
                 height: 250,
                 width: 300,
-                child: Image.asset('assets/signup.gif'),
+                child: Image.asset('assets/signup3.gif'),
               ),
             ),
             Padding(

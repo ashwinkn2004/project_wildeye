@@ -10,9 +10,11 @@ class SuccessPage extends StatelessWidget {
     });
 
     return Scaffold(
-      body: Center(
-        child: Image(image: AssetImage("assets/success.gif")),
-        
+      backgroundColor: Colors.white,
+      body: SizedBox(
+        height: double.infinity,
+        width: double.infinity,
+        child: Image(image: AssetImage("assets/success2.gif")),
       ),
     );
   }

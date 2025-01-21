@@ -88,19 +88,28 @@ class LoginScreen extends StatelessWidget {
             SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.only(left: 20, right: 20),
-              child: Container(
-                height: 50,
-                width: 400,
-                decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: Colors.black),
-                child: Center(
-                  child: Text(
-                    'Log in',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold),
+
+              //ONTAP CONTROLLED FOR THE FIREBASE
+
+
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.pushNamed(context, '/client');
+                },
+                child: Container(
+                  height: 50,
+                  width: 400,
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.black),
+                  child: Center(
+                    child: Text(
+                      'Log in',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ),

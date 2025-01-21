@@ -36,6 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   dropdown_below: ^1.0.3
   dropdown_box: ^0.0.1
+  animated_bottom_navigation_bar: ^1.3.3
 
 dev_dependencies:
   flutter_test:
