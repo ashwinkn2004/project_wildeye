@@ -62,7 +62,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               child: SizedBox(
                 height: 250,
                 width: 300,
-                child: Image.asset('assets/signup3.gif'),
+                child: Image.asset('assets/signupmid.gif'),
               ),
             ),
             Padding(

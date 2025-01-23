@@ -11,10 +11,12 @@ class SuccessPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SizedBox(
-        height: double.infinity,
-        width: double.infinity,
-        child: Image(image: AssetImage("assets/success2.gif")),
+      body: Center(
+        child: SizedBox(
+          height: 70,
+          width: 70,
+          child:Image(image: AssetImage("assets/loading.gif")),
+        ),
       ),
     );
   }
