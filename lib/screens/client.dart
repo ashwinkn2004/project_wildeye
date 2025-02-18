@@ -1,7 +1,7 @@
 import 'dart:ffi';
-
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';  // Import Google Fonts
 import 'package:project_wildeye/quick_access/addcctv.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -14,7 +14,6 @@ class ClientScreen extends StatefulWidget {
 
 class _ClientScreenState extends State<ClientScreen> {
   //navigation setting
-
   int _currentIndex = 0;
 
   final List<IconData> iconList = [
@@ -28,14 +27,20 @@ class _ClientScreenState extends State<ClientScreen> {
     'Report',
     'Profile',
   ];
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        title: Text('WildEye',
-            style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
+        title: Text(
+          'WildEye',
+          style: GoogleFonts.raleway(
+            fontSize: 25,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
         leading: Builder(
           builder: (context) => IconButton(
@@ -68,18 +73,24 @@ class _ClientScreenState extends State<ClientScreen> {
                     SizedBox(height: 10),
                     Text(
                       "  In Emergency Call",
-                      style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.raleway(
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    Text("  1800-425-4733",
-                        style:
-                            TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+                    Text(
+                      "  1800-425-4733",
+                      style: GoogleFonts.montserrat(
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     SizedBox(height: 10),
                     Row(
                       children: [
                         GestureDetector(
                           onTap: () async {
-                            const phoneNumber =
-                                'tel:18004254733'; // Replace with the phone number you want to dial
+                            const phoneNumber = 'tel:18004254733'; // Replace with the phone number you want to dial
                             if (await canLaunch(phoneNumber)) {
                               await launch(phoneNumber);
                             } else {
@@ -87,7 +98,7 @@ class _ClientScreenState extends State<ClientScreen> {
                             }
                           },
                           child: Image.asset(
-                            'assets/callBanner1.png',
+                            'assets/callBanner.png',
                             width: 100,
                             height: 100,
                           ),
@@ -99,7 +110,7 @@ class _ClientScreenState extends State<ClientScreen> {
                           height: 110,
                           width: 110,
                           child: Image.asset('assets/elephantBanner.png'),
-                        )
+                        ),
                       ],
                     ),
                   ],
@@ -111,18 +122,23 @@ class _ClientScreenState extends State<ClientScreen> {
             ),
             Padding(
               padding: const EdgeInsets.only(left: 45),
-              child: Text("Quick Access",
-                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+              child: Text(
+                "Quick Access",
+                style: GoogleFonts.raleway(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             SizedBox(height: 20),
-        
+
             //FIRST CONTAINER
             Row(
               children: [
                 SizedBox(width: 40),
-        
+
                 //CCTV CAMERA ADD
-        
+
                 GestureDetector(
                   onTap: () {
                     AddCctvCamera(context);
@@ -163,8 +179,10 @@ class _ClientScreenState extends State<ClientScreen> {
                           padding: const EdgeInsets.only(left: 20),
                           child: Text(
                             'Add\nCCTV',
-                            style: TextStyle(
-                                fontSize: 20, fontWeight: FontWeight.bold),
+                            style: GoogleFonts.raleway(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
@@ -172,11 +190,11 @@ class _ClientScreenState extends State<ClientScreen> {
                   ),
                 ),
                 SizedBox(width: 25),
-        
+
                 //EMERGENCY CALL NOTIFICATION
-        
+
                 GestureDetector(
-                  onTap: (){
+                  onTap: () {
                     Navigator.pushNamed(context, '/emergencyHelp');
                   },
                   child: Container(
@@ -215,22 +233,24 @@ class _ClientScreenState extends State<ClientScreen> {
                           padding: const EdgeInsets.only(left: 20),
                           child: Text(
                             'Emergency\nHelp',
-                            style: TextStyle(
-                                fontSize: 20, fontWeight: FontWeight.bold),
+                            style: GoogleFonts.raleway(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                )
+                ),
               ],
             ),
             SizedBox(height: 40),
-        
+
             //SECOND CONTAINER
             Row(
               //alert notification
-        
+
               children: [
                 SizedBox(width: 40),
                 Container(
@@ -269,17 +289,19 @@ class _ClientScreenState extends State<ClientScreen> {
                         padding: const EdgeInsets.only(left: 20),
                         child: Text(
                           'Alert\nNotification',
-                          style: TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.bold),
+                          style: GoogleFonts.raleway(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
                 SizedBox(width: 25),
-        
+
                 //alert near-by
-        
+
                 Container(
                   height: 140,
                   width: 140,
@@ -316,8 +338,10 @@ class _ClientScreenState extends State<ClientScreen> {
                         padding: const EdgeInsets.only(left: 20),
                         child: Text(
                           'Alert\nNear-by',
-                          style: TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.bold),
+                          style: GoogleFonts.raleway(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -389,7 +413,7 @@ class _ClientScreenState extends State<ClientScreen> {
         ),
       ),
 
-// Drawer code remains unchanged
+      // Drawer code remains unchanged
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,

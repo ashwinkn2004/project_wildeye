@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:project_wildeye/quick_access/emergency_help.dart';
 import 'package:project_wildeye/screens/client.dart';
 import 'package:project_wildeye/screens/login.dart';
+import 'package:project_wildeye/screens/profile.dart';
+import 'package:project_wildeye/screens/report.dart';
 import 'package:project_wildeye/screens/signup.dart';
 import 'package:project_wildeye/screens/success.dart';
 
@@ -11,6 +13,8 @@ class Routes {
   static const String success = '/success';
   static const String client = '/client';
   static const String emergencyHelp = '/emergencyHelp';
+  static const String profile = '/profile';
+  static const String report = '/report'; 
 
   static Map<String, WidgetBuilder> getRoutes() {
     return {
@@ -19,6 +23,8 @@ class Routes {
       success: (BuildContext context) => SuccessPage(),
       client: (BuildContext context) => ClientScreen(),
       emergencyHelp: (BuildContext context) => EmergencyHelp(),
+      profile: (BuildContext context) => ProfileScreen(),
+      report: (BuildContext context) => ReportScreen(),
     };
   }
 }

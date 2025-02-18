@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart'; // Import Google Fonts
 
 void AddCctvCamera(BuildContext context) {
   showDialog(
@@ -7,7 +8,10 @@ void AddCctvCamera(BuildContext context) {
       String rtspLink = '';
       return AlertDialog(
         backgroundColor: Colors.white,
-        title: Text('Add CCTV Camera'),
+        title: Text(
+          'Add CCTV Camera',
+          style: GoogleFonts.raleway(fontWeight: FontWeight.bold),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -17,8 +21,11 @@ void AddCctvCamera(BuildContext context) {
               },
               decoration: InputDecoration(
                 labelText: 'Enter RTSP Link',
+                labelStyle: GoogleFonts.raleway(),
                 border: OutlineInputBorder(),
               ),
+              style: GoogleFonts
+                  .raleway(), // Apply Raleway font to TextField input
             ),
             SizedBox(height: 10),
           ],
@@ -28,7 +35,10 @@ void AddCctvCamera(BuildContext context) {
             onPressed: () {
               Navigator.of(context).pop();
             },
-            child: Text('Cancel'),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.raleway(),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -42,7 +52,10 @@ void AddCctvCamera(BuildContext context) {
                 );
               }
             },
-            child: Text('Add'),
+            child: Text(
+              'Add',
+              style: GoogleFonts.raleway(),
+            ),
           ),
         ],
       );
