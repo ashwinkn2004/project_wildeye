@@ -109,7 +109,7 @@ class _ReportScreenState extends State<ReportScreen> {
         title: Text(
           'Report',
           style: GoogleFonts.raleway(
-            fontSize: 22,
+            fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
         ),
