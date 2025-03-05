@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:dropdown_below/dropdown_below.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -11,6 +13,7 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
@@ -23,7 +26,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   ];
   List<DropdownMenuItem<Object?>> _dropdownRoleItems = [];
   dynamic _selectedRole;
-  bool _showRoleError = false; // Add a boolean to track role error
+  bool _showRoleError = false;
 
   @override
   void initState() {
@@ -39,8 +42,49 @@ class _SignUpScreenState extends State<SignUpScreen> {
   void _onRoleChanged(dynamic selectedRole) {
     setState(() {
       _selectedRole = selectedRole;
-      _showRoleError = false; // Reset error when a role is selected
+      _showRoleError = false;
     });
+  }
+
+  Future<void> _signUp() async {
+    if (_formKey.currentState!.validate() && _selectedRole != null) {
+      try {
+        // Create user in Firebase Authentication
+        final UserCredential userCredential =
+            await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+        // Get the user ID
+        final String userId = userCredential.user!.uid;
+
+        // Store user data in Firestore based on role
+        final String role = _selectedRole['keyword'];
+        final CollectionReference userCollection =
+            FirebaseFirestore.instance.collection(role.toLowerCase());
+
+        await userCollection.doc(userId).set({
+          'email': _emailController.text.trim(),
+          'password': _passwordController.text
+              .trim(), // Note: Storing passwords in Firestore is not recommended
+          'role': role,
+          'createdAt': DateTime.now(),
+        });
+
+        // Navigate to success page or home screen
+        Navigator.pushNamed(context, '/success');
+      } on FirebaseAuthException catch (e) {
+        // Handle errors
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.message}')),
+        );
+      }
+    } else {
+      setState(() {
+        _showRoleError = _selectedRole == null;
+      });
+    }
   }
 
   @override
@@ -56,13 +100,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 20),
               Center(
                 child: SizedBox(
-                  height: 250,
-                  width: 300,
-                  child: Image.asset('assets/signup2.gif'),
-                ),
+                    height: 250,
+                    width: 300,
+                    child: Image.asset('assets/signup2.gif')),
               ),
               _buildTitle("Sign Up"),
-              _buildTextField("Email Address"),
+              _buildTextField("Email Address", _emailController),
               _buildPasswordField(
                   "Password", _passwordController, _obscurePassword, () {
                 setState(() {
@@ -98,10 +141,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  Widget _buildTextField(String label) {
+  Widget _buildTextField(String label, TextEditingController controller) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: TextFormField(
+        controller: controller,
         decoration: _inputDecoration(label),
         style: GoogleFonts.raleway(),
         validator: (value) =>
@@ -156,7 +200,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               color: Colors.transparent,
               border: Border.all(
                 width: 1.5,
-                color: _showRoleError ? Colors.red : Colors.grey, // Conditional color
+                color: _showRoleError ? Colors.red : Colors.grey,
               ),
               borderRadius: BorderRadius.circular(8),
             ),
@@ -166,7 +210,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             items: _dropdownRoleItems,
             onChanged: _onRoleChanged,
           ),
-          if (_showRoleError) // Conditional error message
+          if (_showRoleError)
             Padding(
               padding: const EdgeInsets.only(left: 10, top: 5),
               child: Text(
@@ -183,16 +227,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: GestureDetector(
-        onTap: () {
-          if (_formKey.currentState!.validate() && _selectedRole != null) {
-            // Proceed to success page if all validations pass
-            Navigator.pushNamed(context, '/success');
-          } else {
-            setState(() {
-              _showRoleError = _selectedRole == null; // Show error if role is null
-            });
-          }
-        },
+        onTap: _signUp,
         child: Container(
           height: 50,
           width: 400,
@@ -248,19 +283,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
         borderRadius: BorderRadius.circular(8.0),
         borderSide: const BorderSide(color: Colors.grey, width: 1.5),
       ),
-      focusedBorder:  OutlineInputBorder(
+      focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8.0),
         borderSide: const BorderSide(color: Colors.blue, width: 1.5),
       ),
-      errorBorder:  OutlineInputBorder(
+      errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8.0),
-        borderSide:
-            const BorderSide(color: Colors.red, width: 1.5), // Red Border on Error
+        borderSide: const BorderSide(color: Colors.red, width: 1.5),
       ),
-      focusedErrorBorder:  OutlineInputBorder(
+      focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8.0),
-        borderSide: const BorderSide(
-            color: Colors.red, width: 1.5), // Red Border when Focused
+        borderSide: const BorderSide(color: Colors.red, width: 1.5),
       ),
     );
   }

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
+import 'package:flutter_vlc_player/flutter_vlc_player.dart';
+
 
 class AlertNotification extends StatefulWidget {
   @override
@@ -7,22 +11,7 @@ class AlertNotification extends StatefulWidget {
 }
 
 class _AlertNotificationState extends State<AlertNotification> {
-  final List<Map<String, String>> alerts = [
-    {
-      "animal": "Tiger",
-      "time": "23:12 3/1/25",
-      "location": "Muthanga",
-      "image":
-          "https://imgs.search.brave.com/Q9Vch3fw0RIaoDGi5NWFWL6ciYWvKxJyypVLTIgtoxQ/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvOTU0/NTYwMjIyL3Bob3Rv/L2JsYWNrLXdoaXRl/LXRpZ2VyLmpwZz9z/PTYxMng2MTImdz0w/Jms9MjAmYz04elRq/RnlUbXQzWUNUN3RZ/RW14ZEhTRlQ0WGFj/elJoaHhDY1h1b2VU/aDJVPQ"
-    },
-    {
-      "animal": "Elephant",
-      "time": "23:12 3/1/25",
-      "location": "Paralam",
-      "image":
-          "https://imgs.search.brave.com/0Ehbkp_L9rlMeOANF7bZe9y_P3FYlYraqaQJQgZqlwk/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9yZW5k/ZXIuZmluZWFydGFt/ZXJpY2EuY29tL2lt/YWdlcy9yZW5kZXJl/ZC9tZWRpdW0vcHJp/bnQvOC84L2JyZWFr/L2ltYWdlcy9hcnR3/b3JraW1hZ2VzL21l/ZGl1bS8xLzItYWZy/aWNhbi1lbGVwaGFu/dC1jbG9zZXVwLXNx/dWFyZS1zdXNhbi1z/Y2htaXR6LmpwZw"
-    },
-  ];
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -40,84 +29,179 @@ class _AlertNotificationState extends State<AlertNotification> {
       ),
       body: Padding(
         padding: EdgeInsets.all(12),
-        child: Column(
-          children: alerts.map((alert) => _buildAlertCard(alert)).toList(),
+        child: StreamBuilder<QuerySnapshot>(
+          stream: _firestore
+              .collection('detections')
+              .orderBy('timestamp', descending: true)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            }
+
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return Center(
+                child: Text(
+                  'No detections found.',
+                  style: GoogleFonts.raleway(fontSize: 18),
+                ),
+              );
+            }
+
+            if (snapshot.hasError) {
+              return Center(
+                child: Text(
+                  'Error fetching detections: ${snapshot.error}',
+                  style: GoogleFonts.raleway(fontSize: 18),
+                ),
+              );
+            }
+
+            final alerts = snapshot.data!.docs;
+
+            return ListView.builder(
+              itemCount: alerts.length,
+              itemBuilder: (context, index) {
+                return _buildAlertCard(alerts[index]);
+              },
+            );
+          },
         ),
       ),
       backgroundColor: Colors.white,
     );
   }
 
-  Widget _buildAlertCard(Map<String, String> alert) {
+  Widget _buildAlertCard(QueryDocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+
+    final String label = data['label'] ?? 'Unknown';
+    final String? timestamp = data['timestamp'];
+    final String location = data['location'] ?? 'Unknown';
+    final String imageUrl =
+        data['image_url'] ?? 'https://via.placeholder.com/80';
+    final String videoUrl = data['video_url'] ?? '';
+
+    String formattedTime = 'N/A';
+    if (timestamp != null) {
+      try {
+        final DateTime dateTime = DateFormat('HH:mm d/M/yy').parse(timestamp);
+        formattedTime = DateFormat('HH:mm dd/MM/yy').format(dateTime);
+      } catch (e) {
+        formattedTime = timestamp;
+      }
+    }
+
     return Container(
       margin: EdgeInsets.only(bottom: 18),
       decoration: BoxDecoration(
-        color: Color(0xFFFDF9F3), // Soft Cream White
+        color: Color(0xFFFDF9F3),
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
-          BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 4)),
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Inner Container (Attached to Outer Container - No Gaps)
           Container(
             padding: EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Color(0xFFE3F2E8), // Soft Mint Green
-              borderRadius:
-                  BorderRadius.vertical(top: Radius.circular(18)), // Attached Top
+              color: Color(0xFFE3F2E8),
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(18),
+                bottom: Radius.circular(18),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 2,
+                  offset: Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.network(
-                    alert["image"]!,
-                    width: 80, // Set a fixed width
-                    height: 80, // Set a fixed height
+                    imageUrl,
+                    width: 80,
+                    height: 80,
                     fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Image.network(
+                        'https://via.placeholder.com/80',
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                      );
+                    },
                   ),
                 ),
                 SizedBox(width: 18),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(alert["animal"]!,
-                        style: GoogleFonts.raleway(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2D2D2D), // Darker Grey-Black
-                        )),
-                    Text(alert["time"]!,
-                        style: GoogleFonts.raleway(
-                          fontSize: 16,
-                          color: Color(0xFF555555), // Soft Grey
-                        )),
-                    Text(alert["location"]!,
-                        style: GoogleFonts.raleway(
-                          fontSize: 16,
-                          color: Color(0xFF555555), // Soft Grey
-                        )),
+                    Text(
+                      label,
+                      style: GoogleFonts.raleway(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2D2D2D),
+                      ),
+                    ),
+                    Text(
+                      formattedTime,
+                      style: GoogleFonts.raleway(
+                        fontSize: 16,
+                        color: Color(0xFF555555),
+                      ),
+                    ),
+                    Text(
+                      location,
+                      style: GoogleFonts.raleway(
+                        fontSize: 16,
+                        color: Color(0xFF555555),
+                      ),
+                    ),
                   ],
                 ),
               ],
             ),
           ),
-          // Bottom Buttons (Image & Video) with Padding to Avoid Border Touching
-          Padding(
+          Container(
             padding: EdgeInsets.symmetric(vertical: 14, horizontal: 18),
+            decoration: BoxDecoration(
+              color: Color(0xFFFDF9F3),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                    child: _buildButton(
-                        "Image", Icons.arrow_forward, Color(0xFF0D47A1), Color(0xFFDCE5F5))), // Deep Blue
+                  child: _buildButton(
+                    "Image",
+                    Icons.arrow_forward,
+                    Color(0xFF0D47A1),
+                    Color(0xFFDCE5F5),
+                    () => _showImagePopup(context, imageUrl),
+                  ),
+                ),
                 SizedBox(width: 16),
                 Expanded(
-                    child: _buildButton(
-                        "Video", Icons.arrow_forward, Color(0xFFC62828), Color(0xFFF9DADA))), // Rich Red
+                  child: _buildButton(
+                    "Video",
+                    Icons.arrow_forward,
+                    Color(0xFFC62828),
+                    Color(0xFFF9DADA),
+                    () => _showVideoPopup(context, videoUrl),
+                  ),
+                ),
               ],
             ),
           ),
@@ -126,7 +210,8 @@ class _AlertNotificationState extends State<AlertNotification> {
     );
   }
 
-  Widget _buildButton(String text, IconData icon, Color textColor, Color bgColor) {
+  Widget _buildButton(String text, IconData icon, Color textColor,
+      Color bgColor, VoidCallback onPressed) {
     return ElevatedButton.icon(
       style: ElevatedButton.styleFrom(
         backgroundColor: bgColor,
@@ -136,9 +221,7 @@ class _AlertNotificationState extends State<AlertNotification> {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
-      onPressed: () {
-        // Handle action
-      },
+      onPressed: onPressed,
       icon: Icon(icon, size: 22),
       label: Text(
         text,
@@ -148,5 +231,174 @@ class _AlertNotificationState extends State<AlertNotification> {
         ),
       ),
     );
+  }
+
+  void _showImagePopup(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Text('Failed to load image');
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Close', style: GoogleFonts.raleway()),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showVideoPopup(BuildContext context, String videoUrl) {
+    if (videoUrl.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No video available', style: GoogleFonts.raleway()),
+        ),
+      );
+      return;
+    }
+
+    print('Opening video popup with URL: $videoUrl');
+    const String testVideoUrl =
+        'https://www.sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4';
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              VideoPopup(videoUrl: videoUrl), // Firestore URL
+              // VideoPopup(videoUrl: testVideoUrl), // Uncomment to test
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Close', style: GoogleFonts.raleway()),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class VideoPopup extends StatefulWidget {
+  final String videoUrl;
+
+  const VideoPopup({required this.videoUrl});
+
+  @override
+  _VideoPopupState createState() => _VideoPopupState();
+}
+
+class _VideoPopupState extends State<VideoPopup> {
+  late VlcPlayerController _controller;
+  String? _errorMessage;
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    print('Initializing video with URL: ${widget.videoUrl}');
+    _initializeVideoPlayer();
+  }
+
+  Future<void> _initializeVideoPlayer() async {
+    _controller = VlcPlayerController.network(
+      widget.videoUrl,
+      hwAcc: HwAcc.full,
+      options: VlcPlayerOptions(),
+    );
+
+    try {
+      await _controller.initialize();
+      print('Video initialized successfully');
+      _controller.play();
+      setState(() {
+        _isInitialized = true;
+      });
+    } catch (e) {
+      print('Initialization error: $e');
+      setState(() {
+        _errorMessage = 'Error initializing video: $e';
+      });
+    }
+
+    _controller.addListener(() {
+      if (_controller.value.isBuffering) {
+        print('Video is buffering');
+      } else if (_controller.value.isPlaying) {
+        print('Video is playing');
+      } else if (_controller.value.hasError) {
+        print('Video error: ${_controller.value.errorDescription}');
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_errorMessage != null)
+          Text(
+            _errorMessage!,
+            style: GoogleFonts.raleway(color: Colors.red),
+          )
+        else if (_isInitialized)
+          SizedBox(
+            height: 200,
+            child: VlcPlayer(
+              controller: _controller,
+              aspectRatio: 16 / 9,
+              placeholder: Center(child: CircularProgressIndicator()),
+            ),
+          )
+        else
+          Center(child: CircularProgressIndicator()),
+        if (_isInitialized)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: Icon(_controller.value.isPlaying
+                    ? Icons.pause
+                    : Icons.play_arrow),
+                onPressed: () {
+                  setState(() {
+                    if (_controller.value.isPlaying) {
+                      _controller.pause();
+                    } else {
+                      _controller.play();
+                    }
+                  });
+                },
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 }

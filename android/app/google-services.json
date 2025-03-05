@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "705252671744",
+    "project_id": "wild-eye-f8551",
+    "storage_bucket": "wild-eye-f8551.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:705252671744:android:822953e00c7c8bfc95b3e5",
+        "android_client_info": {
+          "package_name": "com.example.project_wildeye"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB3tAzwCOLxKJK4BfoozSqSryNlW8-FOOA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_wildeye/quick_access/emergency_help.dart';
+import 'package:project_wildeye/screens/admin.dart';
 import 'package:project_wildeye/screens/alert_notification.dart';
 import 'package:project_wildeye/screens/client.dart';
 import 'package:project_wildeye/screens/login.dart';
@@ -17,6 +18,7 @@ class Routes {
   static const String profile = '/profile';
   static const String report = '/report';
   static const String alertNotification = '/alertNotification';
+  static const String admin = '/admin';
 
   static Map<String, WidgetBuilder> getRoutes() {
     return {
@@ -28,6 +30,7 @@ class Routes {
       profile: (BuildContext context) => ProfileScreen(),
       report: (BuildContext context) => ReportScreen(),
       alertNotification: (BuildContext context) => AlertNotification(),
+      admin: (BuildContext context) => AdminScreen(),
     };
   }
 }
