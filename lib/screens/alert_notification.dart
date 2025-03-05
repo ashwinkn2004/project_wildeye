@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_vlc_player/flutter_vlc_player.dart';
-
+import 'package:webview_flutter/webview_flutter.dart';
 
 class AlertNotification extends StatefulWidget {
   @override
@@ -78,8 +77,7 @@ class _AlertNotificationState extends State<AlertNotification> {
     final String label = data['label'] ?? 'Unknown';
     final String? timestamp = data['timestamp'];
     final String location = data['location'] ?? 'Unknown';
-    final String imageUrl =
-        data['image_url'] ?? 'https://via.placeholder.com/80';
+    final String imageUrl = data['image_url'] ?? 'https://via.placeholder.com/80';
     final String videoUrl = data['video_url'] ?? '';
 
     String formattedTime = 'N/A';
@@ -93,7 +91,7 @@ class _AlertNotificationState extends State<AlertNotification> {
     }
 
     return Container(
-      margin: EdgeInsets.only(bottom: 18),
+      margin: EdgeInsets.only(bottom: 18), // Should be 'bottom'
       decoration: BoxDecoration(
         color: Color(0xFFFDF9F3),
         borderRadius: BorderRadius.circular(18),
@@ -210,8 +208,7 @@ class _AlertNotificationState extends State<AlertNotification> {
     );
   }
 
-  Widget _buildButton(String text, IconData icon, Color textColor,
-      Color bgColor, VoidCallback onPressed) {
+  Widget _buildButton(String text, IconData icon, Color textColor, Color bgColor, VoidCallback onPressed) {
     return ElevatedButton.icon(
       style: ElevatedButton.styleFrom(
         backgroundColor: bgColor,
@@ -272,19 +269,15 @@ class _AlertNotificationState extends State<AlertNotification> {
     }
 
     print('Opening video popup with URL: $videoUrl');
-    const String testVideoUrl =
-        'https://www.sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4';
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              VideoPopup(videoUrl: videoUrl), // Firestore URL
-              // VideoPopup(videoUrl: testVideoUrl), // Uncomment to test
-            ],
+          content: SizedBox(
+            height: 200, // Match original UI height
+            width: 300, // Match original UI width
+            child: VideoWebView(videoUrl: videoUrl),
           ),
           actions: [
             TextButton(
@@ -298,107 +291,57 @@ class _AlertNotificationState extends State<AlertNotification> {
   }
 }
 
-class VideoPopup extends StatefulWidget {
+class VideoWebView extends StatefulWidget {
   final String videoUrl;
 
-  const VideoPopup({required this.videoUrl});
+  const VideoWebView({required this.videoUrl});
 
   @override
-  _VideoPopupState createState() => _VideoPopupState();
+  _VideoWebViewState createState() => _VideoWebViewState();
 }
 
-class _VideoPopupState extends State<VideoPopup> {
-  late VlcPlayerController _controller;
-  String? _errorMessage;
-  bool _isInitialized = false;
+class _VideoWebViewState extends State<VideoWebView> {
+  late WebViewController _webViewController;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    print('Initializing video with URL: ${widget.videoUrl}');
-    _initializeVideoPlayer();
-  }
-
-  Future<void> _initializeVideoPlayer() async {
-    _controller = VlcPlayerController.network(
-      widget.videoUrl,
-      hwAcc: HwAcc.full,
-      options: VlcPlayerOptions(),
-    );
-
-    try {
-      await _controller.initialize();
-      print('Video initialized successfully');
-      _controller.play();
-      setState(() {
-        _isInitialized = true;
-      });
-    } catch (e) {
-      print('Initialization error: $e');
-      setState(() {
-        _errorMessage = 'Error initializing video: $e';
-      });
-    }
-
-    _controller.addListener(() {
-      if (_controller.value.isBuffering) {
-        print('Video is buffering');
-      } else if (_controller.value.isPlaying) {
-        print('Video is playing');
-      } else if (_controller.value.hasError) {
-        print('Video error: ${_controller.value.errorDescription}');
-      }
-    });
+    print('Loading WebView with URL: ${widget.videoUrl}');
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+    return Stack(
       children: [
-        if (_errorMessage != null)
-          Text(
-            _errorMessage!,
-            style: GoogleFonts.raleway(color: Colors.red),
-          )
-        else if (_isInitialized)
-          SizedBox(
-            height: 200,
-            child: VlcPlayer(
-              controller: _controller,
-              aspectRatio: 16 / 9,
-              placeholder: Center(child: CircularProgressIndicator()),
-            ),
-          )
-        else
-          Center(child: CircularProgressIndicator()),
-        if (_isInitialized)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: Icon(_controller.value.isPlaying
-                    ? Icons.pause
-                    : Icons.play_arrow),
-                onPressed: () {
+        WebViewWidget(
+          controller: WebViewController()
+            ..setJavaScriptMode(JavaScriptMode.unrestricted)
+            ..loadRequest(Uri.parse(widget.videoUrl))
+            ..setNavigationDelegate(
+              NavigationDelegate(
+                onPageStarted: (url) {
+                  print('WebView started loading: $url');
+                },
+                onPageFinished: (url) {
+                  print('WebView finished loading: $url');
                   setState(() {
-                    if (_controller.value.isPlaying) {
-                      _controller.pause();
-                    } else {
-                      _controller.play();
-                    }
+                    _isLoading = false;
+                  });
+                },
+                onWebResourceError: (error) {
+                  print('WebView error: ${error.description}');
+                  setState(() {
+                    _isLoading = false;
                   });
                 },
               ),
-            ],
-          ),
+            ),
+        ),
+        if (_isLoading)
+          Center(child: CircularProgressIndicator()),
       ],
     );
   }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 }
+

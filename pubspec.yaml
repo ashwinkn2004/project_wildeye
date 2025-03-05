@@ -48,8 +48,8 @@ dependencies:
   #video_player: ^2.9.3
   #better_player: ^0.0.84
   ##chewie: ^1.10.0
-  flutter_vlc_player: 7.4.2
-  #webview_flutter: ^4.10.0
+  #flutter_vlc_player: 7.4.2
+  webview_flutter: ^4.8.2
 
 dev_dependencies:
   flutter_test:
