@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:video_player/video_player.dart';
 
 class AlertNotification extends StatefulWidget {
   @override
@@ -91,7 +91,7 @@ class _AlertNotificationState extends State<AlertNotification> {
     }
 
     return Container(
-      margin: EdgeInsets.only(bottom: 18), // Should be 'bottom'
+      margin: EdgeInsets.only(bottom: 18),
       decoration: BoxDecoration(
         color: Color(0xFFFDF9F3),
         borderRadius: BorderRadius.circular(18),
@@ -176,8 +176,7 @@ class _AlertNotificationState extends State<AlertNotification> {
             padding: EdgeInsets.symmetric(vertical: 14, horizontal: 18),
             decoration: BoxDecoration(
               color: Color(0xFFFDF9F3),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
-            ),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -268,16 +267,14 @@ class _AlertNotificationState extends State<AlertNotification> {
       return;
     }
 
-    print('Opening video popup with URL: $videoUrl');
-
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           content: SizedBox(
-            height: 200, // Match original UI height
-            width: 300, // Match original UI width
-            child: VideoWebView(videoUrl: videoUrl),
+            height: 200,
+            width: 300,
+            child: VideoPlayerWidget(videoUrl: videoUrl),
           ),
           actions: [
             TextButton(
@@ -291,57 +288,43 @@ class _AlertNotificationState extends State<AlertNotification> {
   }
 }
 
-class VideoWebView extends StatefulWidget {
+class VideoPlayerWidget extends StatefulWidget {
   final String videoUrl;
 
-  const VideoWebView({required this.videoUrl});
+  const VideoPlayerWidget({required this.videoUrl});
 
   @override
-  _VideoWebViewState createState() => _VideoWebViewState();
+  _VideoPlayerWidgetState createState() => _VideoPlayerWidgetState();
 }
 
-class _VideoWebViewState extends State<VideoWebView> {
-  late WebViewController _webViewController;
-  bool _isLoading = true;
+class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
+  late VideoPlayerController _controller;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    print('Loading WebView with URL: ${widget.videoUrl}');
+    _controller = VideoPlayerController.network(widget.videoUrl)
+      ..initialize().then((_) {
+        setState(() {
+          _isInitialized = true;
+        });
+      });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        WebViewWidget(
-          controller: WebViewController()
-            ..setJavaScriptMode(JavaScriptMode.unrestricted)
-            ..loadRequest(Uri.parse(widget.videoUrl))
-            ..setNavigationDelegate(
-              NavigationDelegate(
-                onPageStarted: (url) {
-                  print('WebView started loading: $url');
-                },
-                onPageFinished: (url) {
-                  print('WebView finished loading: $url');
-                  setState(() {
-                    _isLoading = false;
-                  });
-                },
-                onWebResourceError: (error) {
-                  print('WebView error: ${error.description}');
-                  setState(() {
-                    _isLoading = false;
-                  });
-                },
-              ),
-            ),
-        ),
-        if (_isLoading)
-          Center(child: CircularProgressIndicator()),
-      ],
-    );
+    return _isInitialized
+        ? AspectRatio(
+            aspectRatio: _controller.value.aspectRatio,
+            child: VideoPlayer(_controller),
+          )
+        : Center(child: CircularProgressIndicator());
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 }
-
