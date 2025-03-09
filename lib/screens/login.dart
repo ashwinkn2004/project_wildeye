@@ -12,11 +12,14 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  bool _isPasswordVisible = false; // Track the visibility of the password
+  bool _isPasswordVisible = false;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   Future<void> _login() async {
+    // Immediately show loading screen
+    Navigator.pushNamed(context, Routes.success);
+
     try {
       // Authenticate the user using Firebase Authentication
       final UserCredential userCredential =
@@ -27,7 +30,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // Get the user ID
       final String userId = userCredential.user!.uid;
-      print('User ID: $userId'); // Debug: Print user ID
 
       // Check the user's role in Firestore
       final DocumentSnapshot adminDoc = await FirebaseFirestore.instance
@@ -35,22 +37,20 @@ class _LoginScreenState extends State<LoginScreen> {
           .doc(userId)
           .get();
 
-      final DocumentSnapshot clientDoc = await FirebaseFirestore.instance
-          .collection('user')
+      final DocumentSnapshot clientDoc =
+          await FirebaseFirestore.instance.collection('user')
           .doc(userId)
           .get();
 
-      print(
-          'Admin Doc Exists: ${adminDoc.exists}'); // Debug: Print admin doc status
-      print(
-          'Client Doc Exists: ${clientDoc.exists}'); // Debug: Print client doc status
+      // Remove loading screen
+      Navigator.pop(context);
 
       if (adminDoc.exists) {
         // Redirect to admin page
-        Navigator.pushNamed(context, Routes.admin);
+        Navigator.pushReplacementNamed(context, Routes.admin);
       } else if (clientDoc.exists) {
         // Redirect to client page
-        Navigator.pushNamed(context, Routes.client);
+        Navigator.pushReplacementNamed(context, Routes.client);
       } else {
         // Show error if user data is not found
         ScaffoldMessenger.of(context).showSnackBar(
@@ -58,7 +58,8 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } on FirebaseAuthException catch (e) {
-      // Handle authentication errors
+      // Remove loading screen and show error
+      Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${e.message}')),
       );
@@ -116,8 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
               padding: const EdgeInsets.only(left: 20, right: 20),
               child: TextFormField(
                 controller: _passwordController,
-                obscureText:
-                    !_isPasswordVisible, // Control the visibility of password
+                obscureText: !_isPasswordVisible,
                 decoration: InputDecoration(
                   labelText: 'Password',
                   labelStyle: GoogleFonts.raleway(color: Colors.grey),
@@ -140,8 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     onPressed: () {
                       setState(() {
-                        _isPasswordVisible =
-                            !_isPasswordVisible; // Toggle password visibility
+                        _isPasswordVisible = !_isPasswordVisible;
                       });
                     },
                   ),
@@ -171,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
             Padding(
               padding: const EdgeInsets.only(left: 20, right: 20),
               child: GestureDetector(
-                onTap: _login, // Call the login function
+                onTap: _login,
                 child: Container(
                   height: 50,
                   width: 400,
@@ -209,7 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   padding: const EdgeInsets.only(top: 80),
                   child: TextButton(
                     onPressed: () {
-                      Navigator.pushNamed(context, Routes.signUp);
+                      Navigator.pushReplacementNamed(context, Routes.signUp);
                     },
                     child: Text(
                       "Sign up",

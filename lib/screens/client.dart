@@ -16,16 +16,17 @@ class _ClientScreenState extends State<ClientScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey[50], // Light grey background
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.white, // White app bar
         title: Text(
           'WildEye',
-          style: GoogleFonts.raleway(fontSize: 25, fontWeight: FontWeight.bold),
+          style: GoogleFonts.raleway(
+              fontSize: 25, fontWeight: FontWeight.bold, color: Colors.black87),
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: Icon(Icons.menu_open_sharp, size: 30),
+          icon: Icon(Icons.menu_open_sharp, size: 30, color: Colors.black87),
           onPressed: () => Scaffold.of(context).openDrawer(),
         ),
       ),
@@ -40,7 +41,7 @@ class _ClientScreenState extends State<ClientScreen> {
                 height: 198,
                 width: 300,
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade100,
+                  color: Colors.blueGrey[50], // Light blue-grey
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Column(
@@ -50,12 +51,16 @@ class _ClientScreenState extends State<ClientScreen> {
                     Text(
                       "  In Emergency Call",
                       style: GoogleFonts.raleway(
-                          fontSize: 30, fontWeight: FontWeight.bold),
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87),
                     ),
                     Text(
                       "  1800-425-4733",
                       style: GoogleFonts.montserrat(
-                          fontSize: 30, fontWeight: FontWeight.bold),
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87),
                     ),
                     SizedBox(height: 10),
                     Row(
@@ -89,7 +94,9 @@ class _ClientScreenState extends State<ClientScreen> {
               padding: EdgeInsets.only(left: 45),
               child: Text("Quick Access",
                   style: GoogleFonts.raleway(
-                      fontSize: 26, fontWeight: FontWeight.bold)),
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87)),
             ),
             SizedBox(height: 20),
 
@@ -99,17 +106,17 @@ class _ClientScreenState extends State<ClientScreen> {
                 SizedBox(width: 40),
                 _buildQuickAccessCard(
                   icon: Icons.videocam_outlined,
-                  color: Colors.blue,
+                  color: Colors.blueGrey[800]!, // Dark blue-grey
                   text: "Add\nCCTV",
-                  backgroundColor: Colors.blue.shade50,
+                  backgroundColor: Colors.blueGrey[50]!, // Light blue-grey
                   onTap: () => AddCctvCamera(context),
                 ),
                 SizedBox(width: 25),
                 _buildQuickAccessCard(
                   icon: Icons.add_alert,
-                  color: Colors.red,
+                  color: Colors.red[800]!, // Dark red
                   text: "Emergency\nHelp",
-                  backgroundColor: Colors.pink.shade50,
+                  backgroundColor: Colors.red[50]!, // Light red
                   onTap: () => Navigator.pushNamed(context, '/emergencyHelp'),
                 ),
               ],
@@ -122,18 +129,18 @@ class _ClientScreenState extends State<ClientScreen> {
                 SizedBox(width: 40),
                 _buildQuickAccessCard(
                   icon: Icons.notifications_active_outlined,
-                  color: Colors.purple,
+                  color: Colors.purple[800]!, // Dark purple
                   text: "Alert\nNotification",
-                  backgroundColor: Colors.purple.shade50,
+                  backgroundColor: Colors.purple[50]!, // Light purple
                   onTap: () =>
                       Navigator.pushNamed(context, '/alertNotification'),
                 ),
                 SizedBox(width: 25),
                 _buildQuickAccessCard(
                   icon: Icons.warning_amber_rounded,
-                  color: Colors.yellow.shade700,
+                  color: Colors.amber[800]!, // Dark amber
                   text: "Alert\nNearby",
-                  backgroundColor: Colors.yellow.shade100,
+                  backgroundColor: Colors.amber[50]!, // Light amber
                   onTap: () => Navigator.pushNamed(context, '/alertNearby'),
                 ),
               ],
@@ -198,7 +205,9 @@ class _ClientScreenState extends State<ClientScreen> {
               child: Text(
                 text,
                 style: GoogleFonts.raleway(
-                    fontSize: 20, fontWeight: FontWeight.bold),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87),
               ),
             ),
           ],
@@ -212,14 +221,14 @@ class _ClientScreenState extends State<ClientScreen> {
     return Container(
       height: 75,
       decoration: BoxDecoration(
-        color: Colors.blue.shade100,
+        color: Colors.white, // White background
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(20.0),
           topRight: Radius.circular(20.0),
         ),
         boxShadow: [
           BoxShadow(
-              color: Colors.black26, blurRadius: 8.0, offset: Offset(0, -4))
+              color: Colors.black12, blurRadius: 8.0, offset: Offset(0, -4))
         ],
       ),
       child: ClipRRect(
@@ -234,9 +243,9 @@ class _ClientScreenState extends State<ClientScreen> {
             BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
           ],
           currentIndex: _currentIndex,
-          selectedItemColor: Colors.black,
+          selectedItemColor: Colors.blueGrey[800], // Dark blue-grey
           unselectedItemColor: Colors.grey,
-          backgroundColor: Colors.blue.shade50,
+          backgroundColor: Colors.white, // White background
           onTap: (index) {
             setState(() => _currentIndex = index);
             if (_currentIndex == 0)
@@ -254,8 +263,8 @@ class _ClientScreenState extends State<ClientScreen> {
   // Drawer Items
   Widget _buildDrawerItem(IconData icon, String title, String route) {
     return ListTile(
-      leading: Icon(icon),
-      title: Text(title),
+      leading: Icon(icon, color: Colors.black87),
+      title: Text(title, style: TextStyle(color: Colors.black87)),
       onTap: () {
         Navigator.pop(context);
         Navigator.pushNamed(context, route);
