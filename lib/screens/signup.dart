@@ -3,6 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:dropdown_below/dropdown_below.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lottie/lottie.dart';
+import 'package:project_wildeye/screens/success.dart';
+import 'package:project_wildeye/utils/routes.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -48,44 +51,55 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Future<void> _signUp() async {
     if (_formKey.currentState!.validate() && _selectedRole != null) {
-      try {
-        // Create user in Firebase Authentication
-        final UserCredential userCredential =
-            await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-        );
-
-        // Get the user ID
-        final String userId = userCredential.user!.uid;
-
-        // Store user data in Firestore based on role
-        final String role = _selectedRole['keyword'];
-        final CollectionReference userCollection =
-            FirebaseFirestore.instance.collection(role.toLowerCase());
-
-        await userCollection.doc(userId).set({
-          'email': _emailController.text.trim(),
-          'password': _passwordController.text
-              .trim(), // Note: Storing passwords in Firestore is not recommended
-          'role': role,
-          'createdAt': DateTime.now(),
-        });
-
-        // Navigate to success page or home screen
-        Navigator.pushNamed(context, '/success');
-      } on FirebaseAuthException catch (e) {
-        // Handle errors
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.message}')),
-        );
-      }
+      // Navigate to the Success Page immediately
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SuccessPage(
+            future:
+                _performSignUp(), // Pass the database operations as a Future
+            nextRoute:
+                Routes.login, // Navigate to the Login Screen after success
+          ),
+        ),
+      );
     } else {
       setState(() {
         _showRoleError = _selectedRole == null;
       });
     }
   }
+
+  Future<String> _performSignUp() async {
+  try {
+    // Create user in Firebase Authentication
+    final UserCredential userCredential =
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
+
+    // Get the user ID
+    final String userId = userCredential.user!.uid;
+
+    // Store user data in Firestore based on role
+    final String role = _selectedRole['keyword'];
+    final CollectionReference userCollection =
+        FirebaseFirestore.instance.collection(role.toLowerCase());
+
+    await userCollection.doc(userId).set({
+      'email': _emailController.text.trim(),
+      'password': _passwordController.text.trim(),
+      'role': role,
+      'createdAt': DateTime.now(),
+    });
+
+    // Return the next route after successful sign-up
+    return Routes.login; // Navigate to the Login Screen after sign-up
+  } on FirebaseAuthException catch (e) {
+    throw e.message ?? 'Sign-up failed'; // Throw the error to be handled in SuccessPage
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -99,11 +113,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
             children: [
               const SizedBox(height: 20),
               Center(
-                child: SizedBox(
-                    height: 250,
-                    width: 300,
-                    child: Image.asset('assets/signup2.gif')),
-              ),
+                  child: Lottie.network(
+                      "https://lottie.host/4b619cc3-b463-4ae2-b73c-c552d8e1ffd7/CAgRxX5Nsc.json")),
               _buildTitle("Sign Up"),
               _buildTextField("Email Address", _emailController),
               _buildPasswordField(

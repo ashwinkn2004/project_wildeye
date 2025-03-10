@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_wildeye/screens/success.dart';
 import 'package:project_wildeye/utils/routes.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -17,6 +18,19 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
 
   Future<void> _login() async {
+    // Navigate to the Success Page immediately
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SuccessPage(
+          future: _performLogin(), // Pass the login operations as a Future
+          nextRoute: '', // This will be determined dynamically
+        ),
+      ),
+    );
+  }
+
+  Future<String> _performLogin() async {
     try {
       // Authenticate the user using Firebase Authentication
       final UserCredential userCredential =
@@ -27,7 +41,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // Get the user ID
       final String userId = userCredential.user!.uid;
-      print('User ID: $userId'); // Debug: Print user ID
 
       // Check the user's role in Firestore
       final DocumentSnapshot adminDoc = await FirebaseFirestore.instance
@@ -35,33 +48,19 @@ class _LoginScreenState extends State<LoginScreen> {
           .doc(userId)
           .get();
 
-      final DocumentSnapshot clientDoc = await FirebaseFirestore.instance
-          .collection('user')
-          .doc(userId)
-          .get();
-
-      print(
-          'Admin Doc Exists: ${adminDoc.exists}'); // Debug: Print admin doc status
-      print(
-          'Client Doc Exists: ${clientDoc.exists}'); // Debug: Print client doc status
+      final DocumentSnapshot clientDoc =
+          await FirebaseFirestore.instance.collection('user').doc(userId).get();
 
       if (adminDoc.exists) {
-        // Redirect to admin page
-        Navigator.pushNamed(context, Routes.admin);
+        return Routes.admin; // Return the admin route
       } else if (clientDoc.exists) {
-        // Redirect to client page
-        Navigator.pushNamed(context, Routes.client);
+        return Routes.client; // Return the client route
       } else {
-        // Show error if user data is not found
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('User data not found')),
-        );
+        throw 'User data not found'; // Throw an error if user data is not found
       }
     } on FirebaseAuthException catch (e) {
-      // Handle authentication errors
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.message}')),
-      );
+      throw e.message ??
+          'Login failed'; // Throw the error to be handled in SuccessPage
     }
   }
 

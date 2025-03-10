@@ -7,12 +7,10 @@ import 'package:project_wildeye/screens/login.dart';
 import 'package:project_wildeye/screens/profile.dart';
 import 'package:project_wildeye/screens/report.dart';
 import 'package:project_wildeye/screens/signup.dart';
-import 'package:project_wildeye/screens/success.dart';
 
 class Routes {
   static const String signUp = '/signup';
   static const String login = '/login';
-  static const String success = '/success';
   static const String client = '/client';
   static const String emergencyHelp = '/emergencyHelp';
   static const String profile = '/profile';
@@ -24,7 +22,6 @@ class Routes {
     return {
       signUp: (BuildContext context) => SignUpScreen(),
       login: (BuildContext context) => LoginScreen(),
-      success: (BuildContext context) => SuccessPage(),
       client: (BuildContext context) => ClientScreen(),
       emergencyHelp: (BuildContext context) => EmergencyHelp(),
       profile: (BuildContext context) => ProfileScreen(),
