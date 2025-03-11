@@ -30,8 +30,7 @@ class SuccessPage extends StatelessWidget {
         child: SizedBox(
           height: 150,
           width: 150,
-          child: Lottie.network(
-              'https://lottie.host/bd890325-22f1-4d53-a005-4ec701bdbe1f/8ZVUyMrP7E.json'),
+          child: Lottie.asset('assets/loading.json'),
         ),
       ),
     );

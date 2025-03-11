@@ -113,8 +113,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
             children: [
               const SizedBox(height: 20),
               Center(
-                  child: Lottie.network(
-                      "https://lottie.host/4b619cc3-b463-4ae2-b73c-c552d8e1ffd7/CAgRxX5Nsc.json")),
+                  child: Lottie.asset('assets/signup.json',
+                      height: 250, width: 300)),
               _buildTitle("Sign Up"),
               _buildTextField("Email Address", _emailController),
               _buildPasswordField(

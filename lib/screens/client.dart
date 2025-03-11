@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:project_wildeye/quick_access/addcctv.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
 
 class ClientScreen extends StatefulWidget {
   const ClientScreen({super.key});
@@ -12,6 +13,22 @@ class ClientScreen extends StatefulWidget {
 
 class _ClientScreenState extends State<ClientScreen> {
   int _currentIndex = 0;
+  final FirebaseAuth _auth = FirebaseAuth.instance; // Firebase Auth instance
+
+  // Logout function
+  Future<void> _logout() async {
+    try {
+      await _auth.signOut(); // Sign out the user
+      Navigator.pushReplacementNamed(context, '/login'); // Navigate to login screen
+    } catch (e) {
+      print("Error during logout: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Logout failed. Please try again.'),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,14 +36,15 @@ class _ClientScreenState extends State<ClientScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
+        elevation: 0, // Remove shadow from AppBar
         title: Text(
           'WildEye',
           style: GoogleFonts.raleway(fontSize: 25, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: Icon(Icons.menu_open_sharp, size: 30),
-          onPressed: () => Scaffold.of(context).openDrawer(),
+          icon: Icon(Icons.logout, size: 30),
+          onPressed: _logout, // Call the logout function
         ),
       ),
       body: SingleChildScrollView(
@@ -42,6 +60,13 @@ class _ClientScreenState extends State<ClientScreen> {
                 decoration: BoxDecoration(
                   color: Colors.blue.shade100,
                   borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,17 +168,70 @@ class _ClientScreenState extends State<ClientScreen> {
       ),
 
       // Bottom Navigation Bar
-      bottomNavigationBar: _buildBottomNavigationBar(),
+      bottomNavigationBar: Container(
+        height: 75,
+        decoration: BoxDecoration(
+          color: Colors.blue.shade100,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20.0),
+            topRight: Radius.circular(20.0),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 10,
+              offset: Offset(0, -4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20.0),
+            topRight: Radius.circular(20.0),
+          ),
+          child: BottomNavigationBar(
+            items: [
+              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+              BottomNavigationBarItem(icon: Icon(Icons.report), label: 'Report'),
+              BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+            ],
+            currentIndex: _currentIndex,
+            selectedItemColor: Colors.black,
+            unselectedItemColor: Colors.grey,
+            backgroundColor: Colors.blue.shade50,
+            onTap: (index) {
+              setState(() => _currentIndex = index);
+              if (_currentIndex == 0)
+                Navigator.pushNamed(context, '/home');
+              else if (_currentIndex == 1)
+                Navigator.pushNamed(context, '/report');
+              else if (_currentIndex == 2)
+                Navigator.pushNamed(context, '/profile');
+            },
+          ),
+        ),
+      ),
 
       // Drawer
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            _buildDrawerItem(Icons.home, 'Home', '/home'),
-            _buildDrawerItem(Icons.report, 'Report', '/report'),
-            _buildDrawerItem(Icons.person, 'Profile', '/profile'),
+      drawer: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
           ],
+        ),
+        child: Drawer(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: <Widget>[
+              _buildDrawerItem(Icons.home, 'Home', '/home'),
+              _buildDrawerItem(Icons.report, 'Report', '/report'),
+              _buildDrawerItem(Icons.person, 'Profile', '/profile'),
+            ],
+          ),
         ),
       ),
     );
@@ -175,6 +253,13 @@ class _ClientScreenState extends State<ClientScreen> {
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,50 +287,6 @@ class _ClientScreenState extends State<ClientScreen> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  // Bottom Navigation Bar
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      height: 75,
-      decoration: BoxDecoration(
-        color: Colors.blue.shade100,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20.0),
-          topRight: Radius.circular(20.0),
-        ),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black26, blurRadius: 8.0, offset: Offset(0, -4))
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20.0),
-          topRight: Radius.circular(20.0),
-        ),
-        child: BottomNavigationBar(
-          items: [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.report), label: 'Report'),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-          ],
-          currentIndex: _currentIndex,
-          selectedItemColor: Colors.black,
-          unselectedItemColor: Colors.grey,
-          backgroundColor: Colors.blue.shade50,
-          onTap: (index) {
-            setState(() => _currentIndex = index);
-            if (_currentIndex == 0)
-              Navigator.pushNamed(context, '/home');
-            else if (_currentIndex == 1)
-              Navigator.pushNamed(context, '/report');
-            else if (_currentIndex == 2)
-              Navigator.pushNamed(context, '/profile');
-          },
         ),
       ),
     );
