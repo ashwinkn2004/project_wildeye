@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:project_wildeye/quick_access/cam_detection_details.dart';// Import the new file
+import 'package:project_wildeye/quick_access/cam_detection_details.dart'; // Import the new file
 
 class CameraDetectionsScreen extends StatefulWidget {
   @override
@@ -77,8 +77,10 @@ class _CameraDetectionsScreenState extends State<CameraDetectionsScreen> {
     final String label = data['label'] ?? 'Unknown';
     final String? timestamp = data['timestamp'];
     final String location = data['location'] ?? 'Unknown';
-    final String imageUrl = data['image_url'] ?? 'https://via.placeholder.com/80';
+    final String imageUrl =
+        data['image_url'] ?? 'https://via.placeholder.com/80';
     final String videoUrl = data['video_url'] ?? '';
+    final String documentId = doc.id; // Get the document ID
 
     String formattedTime = 'N/A';
     if (timestamp != null) {
@@ -167,7 +169,8 @@ class _CameraDetectionsScreenState extends State<CameraDetectionsScreen> {
                 icon: Icon(Icons.remove_red_eye, color: Colors.blue),
                 onPressed: () {
                   // Open details popup
-                  _showDetailsPopup(context, imageUrl, videoUrl, formattedTime, location);
+                  _showDetailsPopup(context, imageUrl, videoUrl, formattedTime,
+                      location, documentId);
                 },
               ),
             ],
@@ -177,32 +180,42 @@ class _CameraDetectionsScreenState extends State<CameraDetectionsScreen> {
     );
   }
 
-  void _showDetailsPopup(BuildContext context, String imageUrl, String videoUrl, String timestamp, String location) {
-    bool isVerified = false; // Initially false
+  void _showDetailsPopup(BuildContext context, String imageUrl, String videoUrl,
+    String timestamp, String location, String documentId) async {
+  // Fetch the latest isVerified value from Firestore
+  final docSnapshot =
+      await _firestore.collection('detections').doc(documentId).get();
+  final bool isVerified = docSnapshot['verified'] ?? false; // Default to false if not found
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return CamDetectionDetails(
-          imageUrl: imageUrl,
-          videoUrl: videoUrl,
-          timestamp: timestamp,
-          location: location,
-          isVerified: isVerified,
-          onVerifyPressed: () {
-            setState(() {
-              isVerified = !isVerified;
-            });
-          },
-          onAlertPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Alert triggered!'),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
+  showDialog(
+    context: context,
+    builder: (context) {
+      return CamDetectionDetails(
+        imageUrl: imageUrl,
+        videoUrl: videoUrl,
+        timestamp: timestamp,
+        location: location,
+        isVerified: isVerified, // Pass the fetched value
+        onVerifyPressed: () async {
+          // Update the verified field in Firestore
+          await _firestore.collection('detections').doc(documentId).update({
+            'verified': true,
+          });
+        },
+        onAlertPressed: () async {
+          // Update the adminReply field in Firestore
+          await _firestore.collection('detections').doc(documentId).update({
+            'adminReply': true,
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Alert triggered!'),
+            ),
+          );
+        },
+        documentId: documentId, // Pass the document ID
+      );
+    },
+  );
+}
 }

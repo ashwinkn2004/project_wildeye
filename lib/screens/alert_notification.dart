@@ -61,7 +61,17 @@ class _AlertNotificationState extends State<AlertNotification> {
             return ListView.builder(
               itemCount: alerts.length,
               itemBuilder: (context, index) {
-                return _buildAlertCard(alerts[index]);
+                final doc = alerts[index];
+                final data = doc.data() as Map<String, dynamic>;
+                final bool adminReply = data['adminReply'] ?? false;
+
+                // Only display the card if adminReply is true
+                if (adminReply) {
+                  return _buildAlertCard(doc);
+                } else {
+                  return Container(
+                  ); // Return an empty container if adminReply is false
+                }
               },
             );
           },
@@ -71,155 +81,152 @@ class _AlertNotificationState extends State<AlertNotification> {
     );
   }
 
- Widget _buildAlertCard(QueryDocumentSnapshot doc) {
-  final data = doc.data() as Map<String, dynamic>;
+  Widget _buildAlertCard(QueryDocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
 
-  final String label = data['label'] ?? 'Unknown';
-  final String? timestamp = data['timestamp'];
-  final String location = data['location'] ?? 'Unknown';
-  final String imageUrl = data['image_url'] ?? 'https://via.placeholder.com/80';
-  final String videoUrl = data['video_url'] ?? '';
+    final String label = data['label'] ?? 'Unknown';
+    final String? timestamp = data['timestamp'];
+    final String location = data['location'] ?? 'Unknown';
+    final String imageUrl = data['image_url'] ?? 'https://via.placeholder.com/80';
+    final String videoUrl = data['video_url'] ?? '';
 
-  String formattedTime = 'N/A';
-  if (timestamp != null) {
-    try {
-      final DateTime dateTime = DateFormat('HH:mm d/M/yy').parse(timestamp);
-      formattedTime = DateFormat('HH:mm dd/MM/yy').format(dateTime);
-    } catch (e) {
-      formattedTime = timestamp;
+    String formattedTime = 'N/A';
+    if (timestamp != null) {
+      try {
+        final DateTime dateTime = DateFormat('HH:mm d/M/yy').parse(timestamp);
+        formattedTime = DateFormat('HH:mm dd/MM/yy').format(dateTime);
+      } catch (e) {
+        formattedTime = timestamp;
+      }
     }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.2),
+            spreadRadius: 2,
+            blurRadius: 5,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Main Content Row
+          Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  imageUrl,
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.error_outline, color: Colors.red);
+                  },
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: GoogleFonts.raleway(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      formattedTime,
+                      style: GoogleFonts.montserrat(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      location,
+                      style: GoogleFonts.montserrat(
+                        fontSize: 16,
+                        color: Colors.black,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // Divider
+          const Divider(
+            thickness: 1,
+            color: Colors.grey,
+            height: 24,
+          ),
+
+          // Image and Video Buttons
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Expanded(
+                child: _buildButton(
+                  "Image",
+                  Icons.photo_library_outlined, // Changed icon to arrow
+                  Colors.white, // Text color
+                  Colors.green, // Background color
+                  () => _showImagePopup(context, imageUrl),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildButton(
+                  "Video",
+                  Icons.video_collection_rounded, // Changed icon to arrow
+                  Colors.white, // Text color
+                  Colors.blue, // Background color
+                  () => _showVideoPopup(context, videoUrl),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
-  return Container(
-    margin: const EdgeInsets.symmetric(vertical: 8),
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.grey.withOpacity(0.2),
-          spreadRadius: 2,
-          blurRadius: 5,
-          offset: const Offset(0, 3),
+  Widget _buildButton(String text, IconData icon, Color textColor, Color bgColor, VoidCallback onPressed) {
+    return ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: bgColor, // Background color
+        foregroundColor: textColor, // Text and icon color
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
         ),
-      ],
-      border: Border.all(color: Colors.grey.shade300),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Main Content Row
-        Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                imageUrl,
-                width: 80,
-                height: 80,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(Icons.error_outline, color: Colors.red);
-                },
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: GoogleFonts.raleway(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    formattedTime,
-                    style: GoogleFonts.montserrat(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    location,
-                    style: GoogleFonts.montserrat(
-                      fontSize: 16,
-                      color: Colors.black,
-                      decoration: TextDecoration.none,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-
-        // Divider
-        const Divider(
-          thickness: 1,
-          color: Colors.grey,
-          height: 24,
-        ),
-
-        // Image and Video Buttons
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Expanded(
-              child: _buildButton(
-                "Image",
-                Icons.photo_library_outlined, // Changed icon to arrow
-          
-                Colors.white, // Text color
-                Colors.green, // Background color
-                () => _showImagePopup(context, imageUrl),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildButton(
-                "Video",
-                Icons.video_collection_rounded, // Changed icon to arrow
-                Colors.white, // Text color
-                Colors.blue, // Background color
-                () => _showVideoPopup(context, videoUrl),
-              ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
-
-Widget _buildButton(String text, IconData icon, Color textColor, Color bgColor, VoidCallback onPressed) {
-  return ElevatedButton.icon(
-    style: ElevatedButton.styleFrom(
-      backgroundColor: bgColor, // Background color
-      foregroundColor: textColor, // Text and icon color
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
       ),
-    ),
-    onPressed: onPressed,
-    icon: Icon(icon, size: 20, color: textColor),
-    label: Text(
-      text,
-      style: GoogleFonts.raleway(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
+      onPressed: onPressed,
+      icon: Icon(icon, size: 20, color: textColor),
+      label: Text(
+        text,
+        style: GoogleFonts.raleway(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
       ),
-    ),
-  );
-}
-
-
+    );
+  }
 
   void _showImagePopup(BuildContext context, String imageUrl) {
     showDialog(

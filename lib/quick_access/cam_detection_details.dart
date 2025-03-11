@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:video_player/video_player.dart';
+import 'package:project_wildeye/screens/alert_notification.dart';
 
-class CamDetectionDetails extends StatelessWidget {
+class CamDetectionDetails extends StatefulWidget {
   final String imageUrl;
   final String videoUrl;
   final String timestamp;
@@ -10,6 +10,7 @@ class CamDetectionDetails extends StatelessWidget {
   final bool isVerified;
   final Function() onVerifyPressed;
   final Function() onAlertPressed;
+  final String documentId;
 
   const CamDetectionDetails({
     Key? key,
@@ -20,7 +21,21 @@ class CamDetectionDetails extends StatelessWidget {
     required this.isVerified,
     required this.onVerifyPressed,
     required this.onAlertPressed,
+    required this.documentId,
   }) : super(key: key);
+
+  @override
+  _CamDetectionDetailsState createState() => _CamDetectionDetailsState();
+}
+
+class _CamDetectionDetailsState extends State<CamDetectionDetails> {
+  late bool _isVerified;
+
+  @override
+  void initState() {
+    super.initState();
+    _isVerified = widget.isVerified; // Initialize with the passed value
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,11 +48,11 @@ class CamDetectionDetails extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Image
-            if (imageUrl.isNotEmpty)
+            if (widget.imageUrl.isNotEmpty)
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.network(
-                  imageUrl,
+                  widget.imageUrl,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Text('Failed to load image');
@@ -47,12 +62,12 @@ class CamDetectionDetails extends StatelessWidget {
             const SizedBox(height: 16),
 
             // Video Container (if video is available)
-            if (videoUrl.isNotEmpty)
+            if (widget.videoUrl.isNotEmpty)
               Center(
                 child: GestureDetector(
                   onTap: () {
                     // Open video player
-                    _showVideoPopup(context, videoUrl);
+                    _showVideoPopup(context, widget.videoUrl);
                   },
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -74,7 +89,7 @@ class CamDetectionDetails extends StatelessWidget {
 
             // Timestamp
             Text(
-              'Timestamp: $timestamp',
+              'Timestamp: ${widget.timestamp}',
               style: GoogleFonts.montserrat(
                 fontSize: 16,
                 color: Colors.black,
@@ -84,7 +99,7 @@ class CamDetectionDetails extends StatelessWidget {
 
             // Location
             Text(
-              'Location: $location',
+              'Location: ${widget.location}',
               style: GoogleFonts.montserrat(
                 fontSize: 16,
                 color: Colors.black,
@@ -103,8 +118,8 @@ class CamDetectionDetails extends StatelessWidget {
                   ),
                 ),
                 Icon(
-                  isVerified ? Icons.check_circle : Icons.cancel,
-                  color: isVerified ? Colors.green : Colors.red,
+                  _isVerified ? Icons.check_circle : Icons.cancel,
+                  color: _isVerified ? Colors.green : Colors.red,
                 ),
               ],
             ),
@@ -116,7 +131,12 @@ class CamDetectionDetails extends StatelessWidget {
               children: [
                 // Verify Container
                 GestureDetector(
-                  onTap: onVerifyPressed,
+                  onTap: () async {
+                    await widget.onVerifyPressed(); // Call the parent's onVerifyPressed
+                    setState(() {
+                      _isVerified = true; // Update the local state
+                    });
+                  },
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     decoration: BoxDecoration(
@@ -135,7 +155,7 @@ class CamDetectionDetails extends StatelessWidget {
 
                 // Alert Container
                 GestureDetector(
-                  onTap: onAlertPressed,
+                  onTap: widget.onAlertPressed,
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     decoration: BoxDecoration(
@@ -184,46 +204,5 @@ class CamDetectionDetails extends StatelessWidget {
         );
       },
     );
-  }
-}
-
-class VideoPlayerWidget extends StatefulWidget {
-  final String videoUrl;
-
-  const VideoPlayerWidget({required this.videoUrl});
-
-  @override
-  _VideoPlayerWidgetState createState() => _VideoPlayerWidgetState();
-}
-
-class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
-  late VideoPlayerController _controller;
-  bool _isInitialized = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = VideoPlayerController.network(widget.videoUrl)
-      ..initialize().then((_) {
-        setState(() {
-          _isInitialized = true;
-        });
-      });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _isInitialized
-        ? AspectRatio(
-            aspectRatio: _controller.value.aspectRatio,
-            child: VideoPlayer(_controller),
-          )
-        : Center(child: CircularProgressIndicator());
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
   }
 }

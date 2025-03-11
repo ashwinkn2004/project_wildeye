@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project_wildeye/quick_access/emergency_help.dart';
 import 'package:project_wildeye/screens/admin.dart';
+import 'package:project_wildeye/screens/admin_verification.dart';
 import 'package:project_wildeye/screens/alert_notification.dart';
 import 'package:project_wildeye/screens/camera_detections.dart';
 import 'package:project_wildeye/screens/client.dart';
@@ -21,6 +22,7 @@ class Routes {
   static const String admin = '/admin';
   static const String cameraDetections = '/cameraDetections';
   static const String userReports = '/userReports';
+  static const String adminVerification = '/adminVerification';
 
   static Map<String, WidgetBuilder> getRoutes() {
     return {
@@ -34,6 +36,7 @@ class Routes {
       admin: (BuildContext context) => AdminScreen(),
       cameraDetections: (BuildContext context) => CameraDetectionsScreen(),
       userReports: (BuildContext context) => UserReportsScreen(),
+      adminVerification: (BuildContext context) => AdminVerificationScreen(),
     };
   }
 }
