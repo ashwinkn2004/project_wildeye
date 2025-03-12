@@ -2,15 +2,38 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 
 final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 final AudioPlayer audioPlayer = AudioPlayer();
 
+// Background message handler
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Handle background messages
+  await Firebase.initializeApp();
+
   print("Handling a background message: ${message.messageId}");
+
+  // Show local notification
+  showNotification(
+    title: message.notification?.title ?? 'New Detection',
+    body: message.notification?.body ?? 'A new detection has arrived.',
+  );
+
+  // Play alert sound in the background
+  await AndroidAlarmManager.oneShot(
+    Duration(seconds: 1), // Start immediately
+    1, // Unique ID for the alarm
+    playAlertSoundInBackground,
+  );
+}
+
+// Function to play alert sound in the background
+void playAlertSoundInBackground() async {
+  await audioPlayer.play(AssetSource('alert_sound.mp3')); // Add your alert sound file to assets
+  await Future.delayed(Duration(minutes: 1)); // Play sound for 1 minute
+  await audioPlayer.stop();
 }
 
 void initializeFirebaseMessaging() async {
@@ -31,16 +54,20 @@ void initializeFirebaseMessaging() async {
     print('Message data: ${message.data}');
 
     // Show local notification
-    showNotification(message);
+    showNotification(
+      title: message.notification?.title ?? 'New Detection',
+      body: message.notification?.body ?? 'A new detection has arrived.',
+    );
 
-    // Play alert sound for 1 minute
+    // Play alert sound
     playAlertSound();
   });
 
+  // Handle background messages
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 }
 
-void showNotification(RemoteMessage message) async {
+void showNotification({required String title, required String body}) async {
   const AndroidNotificationDetails androidPlatformChannelSpecifics =
       AndroidNotificationDetails(
     'your_channel_id',
@@ -55,8 +82,8 @@ void showNotification(RemoteMessage message) async {
 
   await flutterLocalNotificationsPlugin.show(
     0,
-    message.notification?.title,
-    message.notification?.body,
+    title,
+    body,
     platformChannelSpecifics,
     payload: 'item x',
   );
