@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:project_wildeye/quick_access/cam_detection_details.dart';
-import 'package:project_wildeye/quick_access/user_report_details.dart'; // Import the new file
+import 'package:geocoding/geocoding.dart';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:project_wildeye/quick_access/user_report_details.dart';
 
 class UserReportsScreen extends StatefulWidget {
   @override
@@ -12,6 +15,40 @@ class UserReportsScreen extends StatefulWidget {
 
 class _UserReportsScreenState extends State<UserReportsScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Future<String> getLocationName(double lat, double lon) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(lat, lon);
+      Placemark place = placemarks[0];
+      return "${place.locality}, ${place.administrativeArea}, ${place.country}";
+    } catch (e) {
+      return "Unknown Location";
+    }
+  }
+
+  Future<void> submitReport({
+    required String animalName,
+    required String description,
+    required String emailId,
+    required String image64,
+    required String location,
+  }) async {
+    await _firestore.collection('userReport').add({
+      'adminReply': false,
+      'animalName': animalName,
+      'description': description,
+      'emailId': emailId,
+      'image64': image64,
+      'location': location,
+      'verified': false,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<String> imageToBase64(File imageFile) async {
+    List<int> imageBytes = await imageFile.readAsBytes();
+    return base64Encode(imageBytes);
+  }
 
   @override
   Widget build(BuildContext context) {

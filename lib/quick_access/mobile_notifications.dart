@@ -1,79 +1,126 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:audioplayers/audioplayers.dart';
 
-final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
-final AudioPlayer audioPlayer = AudioPlayer();
+class MobileNotifications {
+  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+  final AudioPlayer audioPlayer = AudioPlayer();
 
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Handle background messages
-  print("Handling a background message: ${message.messageId}");
-}
+  Future<void> initialize() async {
+    // Request notification permissions
+    NotificationSettings settings = await _firebaseMessaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
 
-void initializeFirebaseMessaging() async {
-  await Firebase.initializeApp();
+    print('User granted permission: ${settings.authorizationStatus}');
 
-  // Request permission for notifications
-  NotificationSettings settings = await _firebaseMessaging.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
+    // Initialize local notifications
+    await _initializeLocalNotifications();
 
-  print('User granted permission: ${settings.authorizationStatus}');
+    // Listen for foreground messages
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print('Got a message whilst in the foreground!');
+      handleNotification(message);
+    });
 
-  // Configure Firebase Messaging
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    print('Got a message whilst in the foreground!');
-    print('Message data: ${message.data}');
+    // Handle background messages
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  }
 
-    // Show local notification
-    showNotification(message);
+  @pragma('vm:entry-point')
+  static Future<void> _firebaseMessagingBackgroundHandler(
+      RemoteMessage message) async {
+    print("Handling a background message: ${message.messageId}");
 
-    // Play alert sound for 1 minute
+    // Initialize local notifications and audio player
+    final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+        FlutterLocalNotificationsPlugin();
+    final AudioPlayer audioPlayer = AudioPlayer();
+
+    // Extract animal name from message data
+    final String animalName = message.data['animalName'] ?? 'Unknown Animal';
+
+    // Show notification with animal name
+    await _showNotification(
+      flutterLocalNotificationsPlugin,
+      title: 'New Detection: $animalName',
+      body: message.notification?.body ?? 'A new detection has arrived.',
+    );
+
+    // Play alert sound
+    await audioPlayer.play(AssetSource('assets/alert_sound.mp3'));
+    await Future.delayed(Duration(minutes: 1)); // Play sound for 1 minute
+    await audioPlayer.stop();
+  }
+
+  Future<void> _initializeLocalNotifications() async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    const InitializationSettings initializationSettings =
+        InitializationSettings(android: initializationSettingsAndroid);
+
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  }
+
+  static Future<void> _showNotification(
+    FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin, {
+    required String title,
+    required String body,
+  }) async {
+    print("Showing notification: $title");
+
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'your_channel_id', // Channel ID
+      'your_channel_name', // Channel Name
+      importance: Importance.max,
+      priority: Priority.high,
+      showWhen: false,
+      sound: RawResourceAndroidNotificationSound('alert_sound'), // Add sound
+    );
+
+    const NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+
+    await flutterLocalNotificationsPlugin.show(
+      0,
+      title,
+      body,
+      platformChannelSpecifics,
+      payload: 'item x',
+    );
+  }
+
+  void handleNotification(RemoteMessage message) {
+    print("Handling notification: ${message.notification?.title}");
+
+    // Extract animal name from message data
+    final String animalName = message.data['animalName'] ?? 'Unknown Animal';
+
+    // Show notification with animal name
+    _showNotification(
+      flutterLocalNotificationsPlugin,
+      title: 'New Detection: $animalName',
+      body: message.notification?.body ?? 'A new detection has arrived.',
+    );
+
+    // Play alert sound
     playAlertSound();
-  });
+  }
 
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-}
-
-void showNotification(RemoteMessage message) async {
-  const AndroidNotificationDetails androidPlatformChannelSpecifics =
-      AndroidNotificationDetails(
-    'your_channel_id',
-    'your_channel_name',
-    importance: Importance.max,
-    priority: Priority.high,
-    showWhen: false,
-  );
-
-  const NotificationDetails platformChannelSpecifics =
-      NotificationDetails(android: androidPlatformChannelSpecifics);
-
-  await flutterLocalNotificationsPlugin.show(
-    0,
-    message.notification?.title,
-    message.notification?.body,
-    platformChannelSpecifics,
-    payload: 'item x',
-  );
-}
-
-void playAlertSound() async {
-  await audioPlayer.play(AssetSource('alert_sound.mp3')); // Add your alert sound file to assets
-  await Future.delayed(Duration(minutes: 1)); // Play sound for 1 minute
-  await audioPlayer.stop();
-}
-
-void initializeLocalNotifications() async {
-  const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
-
-  const InitializationSettings initializationSettings =
-      InitializationSettings(android: initializationSettingsAndroid);
-
-  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  Future<void> playAlertSound() async {
+    print("Playing alert sound");
+    try {
+      await audioPlayer.play(AssetSource('assets/alert_sound.mp3'));
+      await Future.delayed(Duration(minutes: 1)); // Play sound for 1 minute
+      await audioPlayer.stop();
+    } catch (e) {
+      print("Error playing sound: $e");
+    }
+  }
 }

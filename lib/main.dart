@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lottie/lottie.dart';
+import 'package:project_wildeye/quick_access/mobile_notifications.dart';
 import 'package:project_wildeye/screens/signup.dart';
 import 'package:project_wildeye/utils/routes.dart';
 import 'package:project_wildeye/utils/splash_screen.dart';
@@ -13,6 +14,9 @@ import 'package:project_wildeye/screens/client.dart'; // Import ClientScreen
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
+  final mobileNotifications = MobileNotifications();
+  await mobileNotifications.initialize();
   runApp(const MyApp());
 }
 
