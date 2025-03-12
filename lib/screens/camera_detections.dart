@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:project_wildeye/quick_access/cam_detection_details.dart';
+import 'package:project_wildeye/quick_access/cam_detection_details.dart'; // Adjust import
 
 class CameraDetectionsScreen extends StatefulWidget {
   @override
@@ -22,53 +22,84 @@ class _CameraDetectionsScreenState extends State<CameraDetectionsScreen> {
   @override
   void initState() {
     super.initState();
-    initializeFirebaseMessaging();
-    initializeLocalNotifications();
+    initializeNotificationsAndMessaging();
     listenForNewDetections();
   }
 
-  void initializeFirebaseMessaging() async {
+  Future<void> initializeNotificationsAndMessaging() async {
     // Request permission for notifications
     NotificationSettings settings = await _firebaseMessaging.requestPermission(
       alert: true,
       badge: true,
       sound: true,
     );
-
     print('User granted permission: ${settings.authorizationStatus}');
 
-    // Listen for foreground messages
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('Got a message whilst in the foreground!');
-      print('Message data: ${message.data}');
+    // Initialize local notifications
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const InitializationSettings initializationSettings =
+        InitializationSettings(android: initializationSettingsAndroid);
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
-      // Show local notification
+    // Handle foreground messages
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print('Foreground message received: ${message.messageId}');
       showNotification(
         title: message.notification?.title ?? 'New Detection',
         body: message.notification?.body ?? 'A new detection has arrived.',
       );
-
-      // Play alert sound for 1 minute
       playAlertSound();
     });
 
-    // Handle background messages
+    // Handle background messages (when app is in background but not terminated)
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      print('Message clicked from background: ${message.messageId}');
+    });
+
+    // Handle terminated state (app closed)
+    RemoteMessage? initialMessage =
+        await _firebaseMessaging.getInitialMessage();
+    if (initialMessage != null) {
+      print('App opened from terminated state: ${initialMessage.messageId}');
+    }
+
+    // Set background message handler
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   }
 
   static Future<void> _firebaseMessagingBackgroundHandler(
       RemoteMessage message) async {
-    print("Handling a background message: ${message.messageId}");
-  }
-
-  void initializeLocalNotifications() async {
+    print('Background message received: ${message.messageId}');
+    // Initialize FlutterLocalNotificationsPlugin in background
+    final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+        FlutterLocalNotificationsPlugin();
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
-
     const InitializationSettings initializationSettings =
         InitializationSettings(android: initializationSettingsAndroid);
-
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
+    // Show notification
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'detection_channel',
+      'Detections',
+      importance: Importance.max,
+      priority: Priority.high,
+      sound: RawResourceAndroidNotificationSound('alert_sound'), // Add sound file to raw folder
+    );
+    const NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+    await flutterLocalNotificationsPlugin.show(
+      0,
+      message.notification?.title ?? 'New Detection',
+      message.notification?.body ?? 'A new detection has arrived.',
+      platformChannelSpecifics,
+    );
+
+    // Play sound in background (optional, requires additional setup)
+    // Note: Playing sound in background may require platform-specific code
   }
 
   void listenForNewDetections() {
@@ -77,17 +108,13 @@ class _CameraDetectionsScreenState extends State<CameraDetectionsScreen> {
         .orderBy('timestamp', descending: true)
         .snapshots()
         .listen((snapshot) {
-      if (snapshot.docs.isNotEmpty) {
+      if (snapshot.docs.isNotEmpty && mounted) {
         final latestDetection = snapshot.docs.first;
         final data = latestDetection.data() as Map<String, dynamic>;
-
-        // Send notification
         showNotification(
           title: 'New Detection',
           body: 'A new detection has arrived: ${data['label']}',
         );
-
-        // Play alert sound
         playAlertSound();
       }
     });
@@ -96,29 +123,27 @@ class _CameraDetectionsScreenState extends State<CameraDetectionsScreen> {
   void showNotification({required String title, required String body}) async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-      'your_channel_id',
-      'your_channel_name',
+      'detection_channel',
+      'Detections',
       importance: Importance.max,
       priority: Priority.high,
-      showWhen: false,
+      sound: RawResourceAndroidNotificationSound('alert_sound'), // Sound file in res/raw
     );
-
     const NotificationDetails platformChannelSpecifics =
         NotificationDetails(android: androidPlatformChannelSpecifics);
-
     await flutterLocalNotificationsPlugin.show(
       0,
       title,
       body,
       platformChannelSpecifics,
-      payload: 'item x',
+      payload: 'detection',
     );
   }
 
   void playAlertSound() async {
-    await audioPlayer.play(AssetSource('alert_sound.mp3')); // Play alert sound
-    await Future.delayed(Duration(minutes: 1)); // Play sound for 1 minute
-    await audioPlayer.stop(); // Stop the sound after 1 minute
+    await audioPlayer.play(AssetSource('alert_sound.mp3'));
+    await Future.delayed(Duration(minutes: 1));
+    await audioPlayer.stop();
   }
 
   @override
@@ -146,7 +171,6 @@ class _CameraDetectionsScreenState extends State<CameraDetectionsScreen> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Center(child: CircularProgressIndicator());
             }
-
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
               return Center(
                 child: Text(
@@ -155,23 +179,18 @@ class _CameraDetectionsScreenState extends State<CameraDetectionsScreen> {
                 ),
               );
             }
-
             if (snapshot.hasError) {
               return Center(
                 child: Text(
-                  'Error fetching detections: ${snapshot.error}',
+                  'Error: ${snapshot.error}',
                   style: GoogleFonts.raleway(fontSize: 18),
                 ),
               );
             }
-
             final alerts = snapshot.data!.docs;
-
             return ListView.builder(
               itemCount: alerts.length,
-              itemBuilder: (context, index) {
-                return _buildAlertCard(alerts[index]);
-              },
+              itemBuilder: (context, index) => _buildAlertCard(alerts[index]),
             );
           },
         ),
@@ -182,14 +201,12 @@ class _CameraDetectionsScreenState extends State<CameraDetectionsScreen> {
 
   Widget _buildAlertCard(QueryDocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-
     final String label = data['label'] ?? 'Unknown';
     final String? timestamp = data['timestamp'];
     final String location = data['location'] ?? 'Unknown';
-    final String imageUrl =
-        data['image_url'] ?? 'https://via.placeholder.com/80';
+    final String imageUrl = data['image_url'] ?? 'https://via.placeholder.com/80';
     final String videoUrl = data['video_url'] ?? '';
-    final String documentId = doc.id; // Get the document ID
+    final String documentId = doc.id;
 
     String formattedTime = 'N/A';
     if (timestamp != null) {
@@ -219,7 +236,6 @@ class _CameraDetectionsScreenState extends State<CameraDetectionsScreen> {
       ),
       child: Row(
         children: [
-          // Image on the left
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Image.network(
@@ -227,13 +243,11 @@ class _CameraDetectionsScreenState extends State<CameraDetectionsScreen> {
               width: 80,
               height: 80,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return const Icon(Icons.error_outline, color: Colors.red);
-              },
+              errorBuilder: (context, error, stackTrace) =>
+                  const Icon(Icons.error_outline, color: Colors.red),
             ),
           ),
           const SizedBox(width: 16),
-          // Details in the middle
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -256,30 +270,24 @@ class _CameraDetectionsScreenState extends State<CameraDetectionsScreen> {
                 const SizedBox(height: 5),
                 Text(
                   location,
-                  style: GoogleFonts.montserrat(
-                    fontSize: 16,
-                    color: Colors.black,
-                    decoration: TextDecoration.none,
-                  ),
+                  style: GoogleFonts.montserrat(fontSize: 16),
                 ),
               ],
             ),
           ),
-          // Cross Icon and View Icon on the right
           Row(
             children: [
               IconButton(
                 icon: Icon(Icons.close, color: Colors.red),
                 onPressed: () {
-                  // Add functionality to delete or dismiss the detection
+                  // Add delete functionality if needed
                 },
               ),
               IconButton(
                 icon: Icon(Icons.remove_red_eye, color: Colors.blue),
                 onPressed: () {
-                  // Open details popup
-                  _showDetailsPopup(context, imageUrl, videoUrl, formattedTime,
-                      location, documentId);
+                  _showDetailsPopup(
+                      context, imageUrl, videoUrl, formattedTime, location, documentId);
                 },
               ),
             ],
@@ -291,38 +299,32 @@ class _CameraDetectionsScreenState extends State<CameraDetectionsScreen> {
 
   void _showDetailsPopup(BuildContext context, String imageUrl, String videoUrl,
       String timestamp, String location, String documentId) async {
-    // Fetch the latest isVerified value from Firestore
     final docSnapshot =
         await _firestore.collection('detections').doc(documentId).get();
     final bool isVerified = docSnapshot['verified'] ?? false;
 
     showDialog(
       context: context,
-      builder: (context) {
-        return CamDetectionDetails(
-          imageUrl: imageUrl,
-          videoUrl: videoUrl,
-          timestamp: timestamp,
-          location: location,
-          isVerified: isVerified,
-          onVerifyPressed: () async {
-            await _firestore.collection('detections').doc(documentId).update({
-              'verified': true,
-            });
-          },
-          onAlertPressed: () async {
-            await _firestore.collection('detections').doc(documentId).update({
-              'adminReply': true,
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Alert triggered!'),
-              ),
-            );
-          },
-          documentId: documentId,
-        );
-      },
+      builder: (context) => CamDetectionDetails(
+        imageUrl: imageUrl,
+        videoUrl: videoUrl,
+        timestamp: timestamp,
+        location: location,
+        isVerified: isVerified,
+        onVerifyPressed: () async {
+          await _firestore.collection('detections').doc(documentId).update({
+            'verified': true,
+          });
+        },
+        onAlertPressed: () async {
+          await _firestore.collection('detections').doc(documentId).update({
+            'adminReply': true,
+          });
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text('Alert triggered!')));
+        },
+        documentId: documentId,
+      ),
     );
   }
 }
