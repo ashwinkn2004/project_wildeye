@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart'; // For location name
 import 'package:firebase_auth/firebase_auth.dart'; // For getting user email
 import 'package:cloud_firestore/cloud_firestore.dart'; // For Firestore
 
@@ -21,7 +22,8 @@ class _ReportScreenState extends State<ReportScreen> {
   final TextEditingController _descriptionController = TextEditingController();
   String? _currentLocation;
   final FirebaseAuth _auth = FirebaseAuth.instance; // Firebase Auth instance
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Firestore instance
+  final FirebaseFirestore _firestore =
+      FirebaseFirestore.instance; // Firestore instance
 
   // Function to pick image from gallery
   Future<void> _pickImage() async {
@@ -47,7 +49,7 @@ class _ReportScreenState extends State<ReportScreen> {
     }
   }
 
-  // Function to detect current location
+  // Function to detect current location and fetch location name
   Future<void> _detectLocation() async {
     try {
       print("Initializing permission check...");
@@ -90,13 +92,29 @@ class _ReportScreenState extends State<ReportScreen> {
         return;
       }
 
+      // Fetch current position
       Position position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high);
       print("Position fetched: ${position.latitude}, ${position.longitude}");
-      setState(() {
-        _currentLocation =
-            "Lat: ${position.latitude}, Lng: ${position.longitude}";
-      });
+
+      // Convert latitude and longitude to location name
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks.first;
+        String locationName =
+            "${place.locality}, ${place.administrativeArea}, ${place.country}";
+        setState(() {
+          _currentLocation = locationName;
+        });
+      } else {
+        setState(() {
+          _currentLocation = "Location not found.";
+        });
+      }
     } catch (e) {
       print("Error fetching location: $e");
       setState(() {
@@ -111,6 +129,7 @@ class _ReportScreenState extends State<ReportScreen> {
     return base64Encode(bytes);
   }
 
+  // Function to submit report to Firestore
   // Function to submit report to Firestore
   Future<void> _submitReport() async {
     try {
@@ -135,6 +154,9 @@ class _ReportScreenState extends State<ReportScreen> {
       // Convert image to Base64
       final String image64 = _imageToBase64(_selectedImage!);
 
+      // Get the current timestamp
+      final String timestamp = DateTime.now().toIso8601String();
+
       // Prepare data for Firestore
       final Map<String, dynamic> reportData = {
         "adminReply": false,
@@ -144,6 +166,7 @@ class _ReportScreenState extends State<ReportScreen> {
         "image64": image64,
         "location": _currentLocation,
         "verified": false,
+        "timestamp": timestamp, // Add timestamp here
       };
 
       // Add data to Firestore

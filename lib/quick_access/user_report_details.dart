@@ -1,32 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:video_player/video_player.dart';
+import 'dart:convert'; // For Base64 decoding
 
-class UserReportsDetails extends StatelessWidget {
-  final String imageUrl;
-  final String videoUrl;
+class UserReportsDetails extends StatefulWidget {
+  final String image64; // Base64 image
   final String timestamp;
   final String location;
-  final String name;
+  final String animalName;
   final String description;
   final String emailId;
   final bool isVerified;
+  final String documentId; // Add documentId parameter
   final Function() onVerifyPressed;
   final Function() onAlertPressed;
 
   const UserReportsDetails({
     Key? key,
-    required this.imageUrl,
-    required this.videoUrl,
+    required this.image64,
     required this.timestamp,
     required this.location,
-    required this.name,
+    required this.animalName,
     required this.description,
     required this.emailId,
     required this.isVerified,
+    required this.documentId, // Add documentId parameter
     required this.onVerifyPressed,
     required this.onAlertPressed,
   }) : super(key: key);
+
+  @override
+  _UserReportsDetailsState createState() => _UserReportsDetailsState();
+}
+
+class _UserReportsDetailsState extends State<UserReportsDetails> {
+  late bool _isVerified;
+
+  @override
+  void initState() {
+    super.initState();
+    _isVerified = widget.isVerified; // Initialize with the passed value
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,12 +51,12 @@ class UserReportsDetails extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image
-            if (imageUrl.isNotEmpty)
+            // Image (if Base64 image is available)
+            if (widget.image64.isNotEmpty)
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  imageUrl,
+                child: Image.memory(
+                  base64Decode(widget.image64), // Decode Base64 image
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Text('Failed to load image');
@@ -52,35 +65,9 @@ class UserReportsDetails extends StatelessWidget {
               ),
             const SizedBox(height: 16),
 
-            // Video Container (if video is available)
-            if (videoUrl.isNotEmpty)
-              Center(
-                child: GestureDetector(
-                  onTap: () {
-                    // Open video player
-                    _showVideoPopup(context, videoUrl);
-                  },
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.blue,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'Play Video',
-                      style: GoogleFonts.montserrat(
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            const SizedBox(height: 16),
-
             // Name
             Text(
-              'Name: $name',
+              'Name: ${widget.animalName}',
               style: GoogleFonts.montserrat(
                 fontSize: 16,
                 color: Colors.black,
@@ -90,7 +77,7 @@ class UserReportsDetails extends StatelessWidget {
 
             // Description
             Text(
-              'Description: $description',
+              'Description: ${widget.description}',
               style: GoogleFonts.montserrat(
                 fontSize: 16,
                 color: Colors.black,
@@ -100,7 +87,7 @@ class UserReportsDetails extends StatelessWidget {
 
             // Email ID
             Text(
-              'Email ID: $emailId',
+              'Email ID: ${widget.emailId}',
               style: GoogleFonts.montserrat(
                 fontSize: 16,
                 color: Colors.black,
@@ -110,7 +97,7 @@ class UserReportsDetails extends StatelessWidget {
 
             // Timestamp
             Text(
-              'Timestamp: $timestamp',
+              'Timestamp: ${widget.timestamp}',
               style: GoogleFonts.montserrat(
                 fontSize: 16,
                 color: Colors.black,
@@ -120,7 +107,7 @@ class UserReportsDetails extends StatelessWidget {
 
             // Location
             Text(
-              'Location: $location',
+              'Location: ${widget.location}',
               style: GoogleFonts.montserrat(
                 fontSize: 16,
                 color: Colors.black,
@@ -139,8 +126,8 @@ class UserReportsDetails extends StatelessWidget {
                   ),
                 ),
                 Icon(
-                  isVerified ? Icons.check_circle : Icons.cancel,
-                  color: isVerified ? Colors.green : Colors.red,
+                  _isVerified ? Icons.check_circle : Icons.cancel,
+                  color: _isVerified ? Colors.green : Colors.red,
                 ),
               ],
             ),
@@ -152,7 +139,12 @@ class UserReportsDetails extends StatelessWidget {
               children: [
                 // Verify Container
                 GestureDetector(
-                  onTap: onVerifyPressed,
+                  onTap: () async {
+                    await widget.onVerifyPressed(); // Call the parent's onVerifyPressed
+                    setState(() {
+                      _isVerified = true; // Update the local state
+                    });
+                  },
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     decoration: BoxDecoration(
@@ -171,7 +163,14 @@ class UserReportsDetails extends StatelessWidget {
 
                 // Alert Container
                 GestureDetector(
-                  onTap: onAlertPressed,
+                  onTap: () async {
+                    await widget.onAlertPressed(); // Call the parent's onAlertPressed
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Alert Triggered'),
+                      ),
+                    );
+                  },
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     decoration: BoxDecoration(
@@ -199,67 +198,5 @@ class UserReportsDetails extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  void _showVideoPopup(BuildContext context, String videoUrl) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          content: SizedBox(
-            height: 200,
-            width: 300,
-            child: VideoPlayerWidget(videoUrl: videoUrl),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Close', style: GoogleFonts.raleway()),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class VideoPlayerWidget extends StatefulWidget {
-  final String videoUrl;
-
-  const VideoPlayerWidget({required this.videoUrl});
-
-  @override
-  _VideoPlayerWidgetState createState() => _VideoPlayerWidgetState();
-}
-
-class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
-  late VideoPlayerController _controller;
-  bool _isInitialized = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = VideoPlayerController.network(widget.videoUrl)
-      ..initialize().then((_) {
-        setState(() {
-          _isInitialized = true;
-        });
-      });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _isInitialized
-        ? AspectRatio(
-            aspectRatio: _controller.value.aspectRatio,
-            child: VideoPlayer(_controller),
-          )
-        : Center(child: CircularProgressIndicator());
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
   }
 }

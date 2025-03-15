@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:project_wildeye/quick_access/cam_detection_details.dart';
-import 'package:project_wildeye/quick_access/user_report_details.dart'; // Import the new file
+import 'package:project_wildeye/quick_access/user_report_details.dart'; // Import the details screen
+import 'dart:convert'; // For Base64 decoding
 
 class UserReportsScreen extends StatefulWidget {
   @override
@@ -31,38 +31,41 @@ class _UserReportsScreenState extends State<UserReportsScreen> {
         padding: EdgeInsets.all(12),
         child: StreamBuilder<QuerySnapshot>(
           stream: _firestore
-              .collection('detections')
+              .collection('userReport') // Fetch from userReport collection
               .orderBy('timestamp', descending: true)
               .snapshots(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
+              print("Loading data...");
               return Center(child: CircularProgressIndicator());
             }
 
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              print("No data found.");
               return Center(
                 child: Text(
-                  'No detections found.',
+                  'No reports found.',
                   style: GoogleFonts.raleway(fontSize: 18),
                 ),
               );
             }
 
             if (snapshot.hasError) {
+              print("Error fetching data: ${snapshot.error}");
               return Center(
                 child: Text(
-                  'Error fetching detections: ${snapshot.error}',
+                  'Error fetching reports: ${snapshot.error}',
                   style: GoogleFonts.raleway(fontSize: 18),
                 ),
               );
             }
 
-            final alerts = snapshot.data!.docs;
-
+            final reports = snapshot.data!.docs;
+            print("Reports fetched: ${reports.length}");
             return ListView.builder(
-              itemCount: alerts.length,
+              itemCount: reports.length,
               itemBuilder: (context, index) {
-                return _buildAlertCard(alerts[index]);
+                return _buildReportCard(reports[index]);
               },
             );
           },
@@ -72,21 +75,47 @@ class _UserReportsScreenState extends State<UserReportsScreen> {
     );
   }
 
-  Widget _buildAlertCard(QueryDocumentSnapshot doc) {
+  Widget _buildReportCard(QueryDocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
 
-    final String label = data['label'] ?? 'Unknown';
+    final String animalName = data['animalName'] ?? 'Unknown';
     final String? timestamp = data['timestamp'];
     final String location = data['location'] ?? 'Unknown';
-    final String imageUrl = data['image_url'] ?? 'https://via.placeholder.com/80';
-    final String videoUrl = data['video_url'] ?? '';
+    final String image64 = data['image64'] ?? ''; // Base64 image
+    final String description = data['description'] ?? 'No description';
+    final String emailId = data['emailId'] ?? 'Unknown';
+    final bool isVerified = data['verified'] ?? false;
 
+    // Validate and decode Base64 image
+    Widget imageWidget;
+    try {
+      if (image64.isNotEmpty) {
+        // Check if the Base64 string is valid
+        final decodedImage = base64Decode(image64);
+        imageWidget = Image.memory(
+          decodedImage,
+          width: 80,
+          height: 80,
+          fit: BoxFit.cover,
+        );
+      } else {
+        // If Base64 string is empty, show an error icon
+        imageWidget = Icon(Icons.error_outline, color: Colors.red);
+      }
+    } catch (e) {
+      // If Base64 string is invalid, show an error icon
+      print("Failed to decode Base64 image: $e");
+      imageWidget = Icon(Icons.error_outline, color: Colors.red);
+    }
+
+    // Format timestamp
     String formattedTime = 'N/A';
     if (timestamp != null) {
       try {
-        final DateTime dateTime = DateFormat('HH:mm d/M/yy').parse(timestamp);
+        final DateTime dateTime = DateTime.parse(timestamp);
         formattedTime = DateFormat('HH:mm dd/MM/yy').format(dateTime);
       } catch (e) {
+        print("Error parsing timestamp: $e");
         formattedTime = timestamp;
       }
     }
@@ -112,15 +141,7 @@ class _UserReportsScreenState extends State<UserReportsScreen> {
           // Image on the left
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              imageUrl,
-              width: 80,
-              height: 80,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return const Icon(Icons.error_outline, color: Colors.red);
-              },
-            ),
+            child: imageWidget,
           ),
           const SizedBox(width: 16),
           // Details in the middle
@@ -129,7 +150,7 @@ class _UserReportsScreenState extends State<UserReportsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  label,
+                  animalName,
                   style: GoogleFonts.raleway(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -155,55 +176,63 @@ class _UserReportsScreenState extends State<UserReportsScreen> {
               ],
             ),
           ),
-          // Cross Icon and View Icon on the right
-          Row(
-            children: [
-              IconButton(
-                icon: Icon(Icons.close, color: Colors.red),
-                onPressed: () {
-                  // Add functionality to delete or dismiss the detection
-                },
-              ),
-              IconButton(
-                icon: Icon(Icons.remove_red_eye, color: Colors.blue),
-                onPressed: () {
-                  // Open details popup
-                  _showDetailsPopup(context, imageUrl, videoUrl, formattedTime, location);
-                },
-              ),
-            ],
+          // View Icon on the right
+          IconButton(
+            icon: Icon(Icons.remove_red_eye, color: Colors.blue),
+            onPressed: () {
+              // Open details popup
+              _showDetailsPopup(
+                context,
+                doc.id, // Pass the document ID
+                image64,
+                formattedTime,
+                location,
+                animalName,
+                description,
+                emailId,
+                isVerified,
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  void _showDetailsPopup(BuildContext context, String imageUrl, String videoUrl, String timestamp, String location) {
-    bool isVerified = false; // Initially false
-
+  void _showDetailsPopup(
+    BuildContext context,
+    String documentId, // Add documentId parameter
+    String image64,
+    String timestamp,
+    String location,
+    String animalName,
+    String description,
+    String emailId,
+    bool isVerified,
+  ) {
     showDialog(
       context: context,
       builder: (context) {
         return UserReportsDetails(
-          imageUrl: imageUrl,
-          videoUrl: videoUrl,
+          image64: image64,
           timestamp: timestamp,
           location: location,
-          name: "Dummy Value",
-          description: "Hii",
-          emailId: "dummy@gmail.com",
+          animalName: animalName,
+          description: description,
+          emailId: emailId,
           isVerified: isVerified,
-          onVerifyPressed: () {
-            setState(() {
-              isVerified = !isVerified;
+          documentId: documentId, // Pass the documentId
+          onVerifyPressed: () async {
+            // Update verification status in Firestoreaa
+            await _firestore.collection('userReport').doc(documentId).update({
+              'verified': true,
             });
           },
-          onAlertPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Alert triggered!'),
-              ),
-            );
+          onAlertPressed: () async {
+            // Update alert status in Firestore
+            await _firestore.collection('userReport').doc(documentId).update({
+              'adminReply': true,
+            });
           },
         );
       },

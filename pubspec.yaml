@@ -53,6 +53,7 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   audioplayers: ^6.4.0
   android_alarm_manager_plus: ^4.0.7
+  geocoding: ^2.1.0
 
 dev_dependencies:
   flutter_test:
