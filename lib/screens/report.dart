@@ -1,10 +1,12 @@
+import 'dart:io';
+import 'dart:convert'; // For Base64 encoding
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // For getting user email
+import 'package:cloud_firestore/cloud_firestore.dart'; // For Firestore
 
 class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
@@ -18,6 +20,8 @@ class _ReportScreenState extends State<ReportScreen> {
   final TextEditingController _animalController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   String? _currentLocation;
+  final FirebaseAuth _auth = FirebaseAuth.instance; // Firebase Auth instance
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Firestore instance
 
   // Function to pick image from gallery
   Future<void> _pickImage() async {
@@ -98,6 +102,80 @@ class _ReportScreenState extends State<ReportScreen> {
       setState(() {
         _currentLocation = "Failed to fetch location: $e";
       });
+    }
+  }
+
+  // Function to convert image to Base64
+  String _imageToBase64(File image) {
+    final bytes = image.readAsBytesSync();
+    return base64Encode(bytes);
+  }
+
+  // Function to submit report to Firestore
+  Future<void> _submitReport() async {
+    try {
+      if (_selectedImage == null ||
+          _animalController.text.isEmpty ||
+          _currentLocation == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Please fill all required fields.",
+              style: GoogleFonts.raleway(),
+            ),
+          ),
+        );
+        return;
+      }
+
+      // Get the current user's email
+      final User? user = _auth.currentUser;
+      final String emailId = user?.email ?? "unknown@example.com";
+
+      // Convert image to Base64
+      final String image64 = _imageToBase64(_selectedImage!);
+
+      // Prepare data for Firestore
+      final Map<String, dynamic> reportData = {
+        "adminReply": false,
+        "animalName": _animalController.text,
+        "description": _descriptionController.text,
+        "emailId": emailId,
+        "image64": image64,
+        "location": _currentLocation,
+        "verified": false,
+      };
+
+      // Add data to Firestore
+      await _firestore.collection("userReport").add(reportData);
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "Report submitted successfully!",
+            style: GoogleFonts.raleway(),
+          ),
+        ),
+      );
+
+      // Clear form after submission
+      setState(() {
+        _selectedImage = null;
+        _animalController.clear();
+        _descriptionController.clear();
+        _currentLocation = null;
+      });
+    } catch (e) {
+      print("Error submitting report: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "Failed to submit report. Please try again.",
+            style: GoogleFonts.raleway(),
+          ),
+        ),
+      );
     }
   }
 
@@ -251,29 +329,7 @@ class _ReportScreenState extends State<ReportScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (_selectedImage != null &&
-                        _animalController.text.isNotEmpty &&
-                        _currentLocation != null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            "Report submitted successfully!",
-                            style: GoogleFonts.raleway(),
-                          ),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            "Please fill all required fields.",
-                            style: GoogleFonts.raleway(),
-                          ),
-                        ),
-                      );
-                    }
-                  },
+                  onPressed: _submitReport,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,

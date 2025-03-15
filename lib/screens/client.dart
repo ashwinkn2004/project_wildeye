@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:project_wildeye/quick_access/addcctv.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
 
@@ -118,30 +117,7 @@ class _ClientScreenState extends State<ClientScreen> {
             ),
             SizedBox(height: 20),
 
-            // Quick Access Buttons
-            Row(
-              children: [
-                SizedBox(width: 40),
-                _buildQuickAccessCard(
-                  icon: Icons.videocam_outlined,
-                  color: Colors.blue,
-                  text: "Add\nCCTV",
-                  backgroundColor: Colors.blue.shade50,
-                  onTap: () => AddCctvCamera(context),
-                ),
-                SizedBox(width: 25),
-                _buildQuickAccessCard(
-                  icon: Icons.add_alert,
-                  color: Colors.red,
-                  text: "Emergency\nHelp",
-                  backgroundColor: Colors.pink.shade50,
-                  onTap: () => Navigator.pushNamed(context, '/emergencyHelp'),
-                ),
-              ],
-            ),
-            SizedBox(height: 40),
-
-            // Alert Buttons
+            // Quick Access Buttons (Priority Order)
             Row(
               children: [
                 SizedBox(width: 40),
@@ -150,16 +126,38 @@ class _ClientScreenState extends State<ClientScreen> {
                   color: Colors.purple,
                   text: "Alert\nNotification",
                   backgroundColor: Colors.purple.shade50,
-                  onTap: () =>
-                      Navigator.pushNamed(context, '/alertNotification'),
+                  onTap: () => Navigator.pushNamed(context, '/alertNotification'),
                 ),
                 SizedBox(width: 25),
                 _buildQuickAccessCard(
-                  icon: Icons.warning_amber_rounded,
+                  icon: Icons.group,
                   color: Colors.yellow.shade700,
-                  text: "Alert\nNearby",
+                  text: "User\nNotifications",
                   backgroundColor: Colors.yellow.shade100,
-                  onTap: () => Navigator.pushNamed(context, '/alertNearby'),
+                  onTap: () => Navigator.pushNamed(context, '/userNotification'),
+                ),
+              ],
+            ),
+            SizedBox(height: 40),
+
+            // Authority Notifications and Emergency Help
+            Row(
+              children: [
+                SizedBox(width: 40),
+                _buildQuickAccessCard(
+                  icon: Icons.admin_panel_settings,
+                  color: Colors.blue,
+                  text: "Authority\nNotification",
+                  backgroundColor: Colors.blue.shade50,
+                  onTap: () => Navigator.pushNamed(context, '/authorityNotification'),
+                ),
+                SizedBox(width: 25),
+                _buildQuickAccessCard(
+                  icon: Icons.add_alert,
+                  color: Colors.red,
+                  text: "Emergency\nHelp",
+                  backgroundColor: Colors.pink.shade50,
+                  onTap: () => Navigator.pushNamed(context, '/emergencyHelp'),
                 ),
               ],
             ),

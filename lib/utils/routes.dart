@@ -3,12 +3,14 @@ import 'package:project_wildeye/quick_access/emergency_help.dart';
 import 'package:project_wildeye/screens/admin.dart';
 import 'package:project_wildeye/screens/admin_verification.dart';
 import 'package:project_wildeye/screens/alert_notification.dart';
+import 'package:project_wildeye/screens/authority_notification.dart';
 import 'package:project_wildeye/screens/camera_detections.dart';
 import 'package:project_wildeye/screens/client.dart';
 import 'package:project_wildeye/screens/login.dart';
 import 'package:project_wildeye/screens/profile.dart';
 import 'package:project_wildeye/screens/report.dart';
 import 'package:project_wildeye/screens/signup.dart';
+import 'package:project_wildeye/screens/user_notification.dart';
 import 'package:project_wildeye/screens/user_reports.dart';
 
 class Routes {
@@ -23,6 +25,8 @@ class Routes {
   static const String cameraDetections = '/cameraDetections';
   static const String userReports = '/userReports';
   static const String adminVerification = '/adminVerification';
+  static const String authorityNotification = '/authorityNotification';
+  static const String userNotification = '/userNotification';
 
   static Map<String, WidgetBuilder> getRoutes() {
     return {
@@ -37,6 +41,9 @@ class Routes {
       cameraDetections: (BuildContext context) => CameraDetectionsScreen(),
       userReports: (BuildContext context) => UserReportsScreen(),
       adminVerification: (BuildContext context) => AdminVerificationScreen(),
+      authorityNotification: (BuildContext context) => AuthorityNotificationScreen(),
+      userNotification: (BuildContext context) => UserNotificationScreen(),
+
     };
   }
 }
