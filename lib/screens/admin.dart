@@ -18,7 +18,8 @@ class _AdminScreenState extends State<AdminScreen> {
   Future<void> _logout() async {
     try {
       await _auth.signOut(); // Sign out the user
-      Navigator.pushReplacementNamed(context, '/login'); // Navigate to login screen
+      Navigator.pushReplacementNamed(
+          context, '/login'); // Navigate to login screen
     } catch (e) {
       print("Error during logout: $e");
       ScaffoldMessenger.of(context).showSnackBar(
@@ -117,7 +118,8 @@ class _AdminScreenState extends State<AdminScreen> {
                   color: Colors.blue,
                   text: "Authority\nNotification",
                   backgroundColor: Colors.blue.shade50,
-                  onTap: () => Navigator.pushNamed(context, '/authorityNotification'),
+                  onTap: () =>
+                      Navigator.pushNamed(context, '/authorityNotification'),
                 ),
                 const SizedBox(width: 25),
                 _buildQuickAccessCard(
@@ -140,7 +142,8 @@ class _AdminScreenState extends State<AdminScreen> {
                   color: Colors.purple,
                   text: "Camera\nDetections",
                   backgroundColor: Colors.purple.shade50,
-                  onTap: () => Navigator.pushNamed(context, '/cameraDetections'),
+                  onTap: () =>
+                      Navigator.pushNamed(context, '/cameraDetections'),
                 ),
                 const SizedBox(width: 25),
                 _buildQuickAccessCard(
@@ -238,60 +241,87 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   // Bottom Navigation Bar
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      height: 75,
-      decoration: BoxDecoration(
-        color: Colors.blue.shade100,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20.0),
-          topRight: Radius.circular(20.0),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.3),
-            spreadRadius: 2,
-            blurRadius: 5,
-            offset: const Offset(0, -4),
-          ),
-        ],
+Widget _buildBottomNavigationBar() {
+  return Container(
+    height: 75,
+    decoration: BoxDecoration(
+      color: Colors.blue.shade50,
+      borderRadius: BorderRadius.only(
+        topLeft: Radius.circular(20.0),
+        topRight: Radius.circular(20.0),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20.0),
-          topRight: Radius.circular(20.0),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.grey.withOpacity(0.3),
+          spreadRadius: 2,
+          blurRadius: 5,
+          offset: const Offset(0, -4),
         ),
-        child: BottomNavigationBar(
-          items: const [
-            BottomNavigationBarItem(
-                icon: Icon(Icons.dashboard), label: 'Dashboard'),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.group), label: 'Users'),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.person), label: 'Profile'),
-          ],
-          currentIndex: _currentIndex,
-          selectedItemColor: Colors.black,
-          unselectedItemColor: Colors.grey,
-          backgroundColor: Colors.blue.shade50,
-          onTap: (index) {
-            setState(() => _currentIndex = index);
-            switch (index) {
-              case 0:
-                Navigator.pushNamed(context, '/dashboard');
-                break;
-              case 1:
-                Navigator.pushNamed(context, '/userDetails');
-                break;
-              case 2:
-                Navigator.pushNamed(context, '/profile');
-                break;
-            }
+      ],
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        // Dashboard
+        _buildBottomNavItem(
+          icon: Icons.dashboard,
+          label: 'Dashboard',
+          color: Colors.black, // Always black
+          onTap: () {
+            setState(() => _currentIndex = 0);
+            Navigator.pushNamed(context, '/dashboard');
           },
         ),
-      ),
-    );
-  }
+        // Users
+        _buildBottomNavItem(
+          icon: Icons.group,
+          label: 'Users',
+          color: Colors.grey, // Always grey
+          onTap: () {
+            setState(() => _currentIndex = 1);
+            Navigator.pushNamed(context, '/userDetails');
+          },
+        ),
+        // Profile
+        _buildBottomNavItem(
+          icon: Icons.person,
+          label: 'Profile',
+          color: Colors.grey, // Always grey
+          onTap: () {
+            setState(() => _currentIndex = 2);
+            Navigator.pushNamed(context, '/profile');
+          },
+        ),
+      ],
+    ),
+  );
+}
+
+// Custom Bottom Navigation Item
+Widget _buildBottomNavItem({
+  required IconData icon,
+  required String label,
+  required Color color,
+  required VoidCallback onTap,
+}) {
+  return InkWell(
+    onTap: onTap,
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, color: color),
+        Text(
+          label,
+          style: GoogleFonts.raleway(
+            fontSize: 12,
+            color: color,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   // Drawer Items
   Widget _buildDrawerItem(IconData icon, String title, String route) {
