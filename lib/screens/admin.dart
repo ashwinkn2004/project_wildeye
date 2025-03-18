@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:project_wildeye/quick_access/addcctv.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
 
 class AdminScreen extends StatefulWidget {
@@ -25,6 +24,10 @@ class _AdminScreenState extends State<AdminScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Logout failed. Please try again.'),
+          action: SnackBarAction(
+            label: 'Retry',
+            onPressed: _logout,
+          ),
         ),
       );
     }
@@ -83,7 +86,13 @@ class _AdminScreenState extends State<AdminScreen> {
                           fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 10),
-                    Center(child: Image(image: AssetImage('assets/elephantBanner.png'),height: 120, width: 120,)),
+                    Center(
+                      child: Image(
+                        image: AssetImage('assets/elephantBanner.png'),
+                        height: 120,
+                        width: 120,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -91,22 +100,24 @@ class _AdminScreenState extends State<AdminScreen> {
             const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.only(left: 45),
-              child: Text("Quick Access",
-                  style: GoogleFonts.raleway(
-                      fontSize: 26, fontWeight: FontWeight.bold)),
+              child: Text(
+                "Quick Access",
+                style: GoogleFonts.raleway(
+                    fontSize: 26, fontWeight: FontWeight.bold),
+              ),
             ),
             const SizedBox(height: 20),
 
-            // Quick Access Buttons
+            // Quick Access Buttons (Priority Order)
             Row(
               children: [
                 const SizedBox(width: 40),
                 _buildQuickAccessCard(
-                  icon: Icons.people_outline,
+                  icon: Icons.security,
                   color: Colors.blue,
-                  text: "Manage\nUsers",
+                  text: "Authority\nNotification",
                   backgroundColor: Colors.blue.shade50,
-                  onTap: () => Navigator.pushNamed(context, '/manageUsers'),
+                  onTap: () => Navigator.pushNamed(context, '/authorityNotification'),
                 ),
                 const SizedBox(width: 25),
                 _buildQuickAccessCard(
@@ -120,7 +131,7 @@ class _AdminScreenState extends State<AdminScreen> {
             ),
             const SizedBox(height: 40),
 
-            // Admin Tools
+            // Secondary Quick Access Buttons
             Row(
               children: [
                 const SizedBox(width: 40),
@@ -152,10 +163,10 @@ class _AdminScreenState extends State<AdminScreen> {
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
-          children: <Widget>[
+          children: [
             _buildDrawerItem(Icons.dashboard, 'Dashboard', '/dashboard'),
-            _buildDrawerItem(Icons.people, 'Users', '/users'),
-            _buildDrawerItem(Icons.settings, 'Settings', '/settings'),
+            _buildDrawerItem(Icons.security, 'Users', '/userDetails'),
+            _buildDrawerItem(Icons.person, 'Profile', '/profile'),
           ],
         ),
       ),
@@ -254,9 +265,10 @@ class _AdminScreenState extends State<AdminScreen> {
           items: const [
             BottomNavigationBarItem(
                 icon: Icon(Icons.dashboard), label: 'Dashboard'),
-            BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Users'),
             BottomNavigationBarItem(
-                icon: Icon(Icons.settings), label: 'Settings'),
+                icon: Icon(Icons.group), label: 'Users'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.person), label: 'Profile'),
           ],
           currentIndex: _currentIndex,
           selectedItemColor: Colors.black,
@@ -264,12 +276,17 @@ class _AdminScreenState extends State<AdminScreen> {
           backgroundColor: Colors.blue.shade50,
           onTap: (index) {
             setState(() => _currentIndex = index);
-            if (_currentIndex == 0)
-              Navigator.pushNamed(context, '/dashboard');
-            else if (_currentIndex == 1)
-              Navigator.pushNamed(context, '/users');
-            else if (_currentIndex == 2)
-              Navigator.pushNamed(context, '/settings');
+            switch (index) {
+              case 0:
+                Navigator.pushNamed(context, '/dashboard');
+                break;
+              case 1:
+                Navigator.pushNamed(context, '/userDetails');
+                break;
+              case 2:
+                Navigator.pushNamed(context, '/profile');
+                break;
+            }
           },
         ),
       ),

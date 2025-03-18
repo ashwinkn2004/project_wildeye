@@ -10,6 +10,7 @@ import 'package:project_wildeye/screens/login.dart';
 import 'package:project_wildeye/screens/profile.dart';
 import 'package:project_wildeye/screens/report.dart';
 import 'package:project_wildeye/screens/signup.dart';
+import 'package:project_wildeye/screens/user_details.dart';
 import 'package:project_wildeye/screens/user_notification.dart';
 import 'package:project_wildeye/screens/user_reports.dart';
 
@@ -27,6 +28,7 @@ class Routes {
   static const String adminVerification = '/adminVerification';
   static const String authorityNotification = '/authorityNotification';
   static const String userNotification = '/userNotification';
+  static const String userDetails = '/userDetails';
 
   static Map<String, WidgetBuilder> getRoutes() {
     return {
@@ -43,7 +45,7 @@ class Routes {
       adminVerification: (BuildContext context) => AdminVerificationScreen(),
       authorityNotification: (BuildContext context) => AuthorityNotificationScreen(),
       userNotification: (BuildContext context) => UserNotificationScreen(),
-
+      userDetails: (BuildContext context) => UsersDetailsPage(),
     };
   }
 }
