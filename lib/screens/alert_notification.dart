@@ -69,8 +69,7 @@ class _AlertNotificationState extends State<AlertNotification> {
                 if (adminReply) {
                   return _buildAlertCard(doc);
                 } else {
-                  return Container(
-                  ); // Return an empty container if adminReply is false
+                  return Container(); // Return an empty container if adminReply is false
                 }
               },
             );
@@ -87,7 +86,8 @@ class _AlertNotificationState extends State<AlertNotification> {
     final String label = data['label'] ?? 'Unknown';
     final String? timestamp = data['timestamp'];
     final String location = data['location'] ?? 'Unknown';
-    final String imageUrl = data['image_url'] ?? 'https://via.placeholder.com/80';
+    final String imageUrl =
+        data['image_url'] ?? 'https://via.placeholder.com/80';
     final String videoUrl = data['video_url'] ?? '';
 
     String formattedTime = 'N/A';
@@ -206,7 +206,8 @@ class _AlertNotificationState extends State<AlertNotification> {
     );
   }
 
-  Widget _buildButton(String text, IconData icon, Color textColor, Color bgColor, VoidCallback onPressed) {
+  Widget _buildButton(String text, IconData icon, Color textColor,
+      Color bgColor, VoidCallback onPressed) {
     return ElevatedButton.icon(
       style: ElevatedButton.styleFrom(
         backgroundColor: bgColor, // Background color
@@ -299,26 +300,51 @@ class VideoPlayerWidget extends StatefulWidget {
 class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   late VideoPlayerController _controller;
   bool _isInitialized = false;
+  bool _hasError = false;
 
   @override
   void initState() {
     super.initState();
+    _initializeVideo();
+  }
+
+  Future<void> _initializeVideo() async {
     _controller = VideoPlayerController.network(widget.videoUrl)
       ..initialize().then((_) {
-        setState(() {
-          _isInitialized = true;
-        });
+        if (mounted) {
+          setState(() {
+            _isInitialized = true;
+          });
+          _controller.play(); // Autoplay the video
+        }
+      }).catchError((error) {
+        if (mounted) {
+          setState(() {
+            _hasError = true;
+          });
+        }
       });
   }
 
   @override
   Widget build(BuildContext context) {
-    return _isInitialized
-        ? AspectRatio(
-            aspectRatio: _controller.value.aspectRatio,
-            child: VideoPlayer(_controller),
-          )
-        : Center(child: CircularProgressIndicator());
+    if (_hasError) {
+      return Center(
+        child: Text(
+          'Failed to load video',
+          style: GoogleFonts.raleway(),
+        ),
+      );
+    }
+
+    if (!_isInitialized) {
+      return Center(child: CircularProgressIndicator());
+    }
+
+    return AspectRatio(
+      aspectRatio: _controller.value.aspectRatio,
+      child: VideoPlayer(_controller),
+    );
   }
 
   @override
