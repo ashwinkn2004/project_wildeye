@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:project_wildeye/quick_access/cam_detection_details.dart';
-import 'package:project_wildeye/quick_access/mobile_notifications.dart';
-//import 'mobile_notification.dart'; // Import the notification logic
+import 'package:project_wildeye/quick_access/mobile_notifications.dart'; // For playing alert sound
 
 class CameraDetectionsScreen extends StatefulWidget {
   @override
@@ -13,6 +13,8 @@ class CameraDetectionsScreen extends StatefulWidget {
 
 class _CameraDetectionsScreenState extends State<CameraDetectionsScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final AudioPlayer _audioPlayer = AudioPlayer(); // For playing alert sound
+  bool _hasPlayedSound = false; // To prevent playing sound multiple times
 
   @override
   void initState() {
@@ -32,16 +34,32 @@ class _CameraDetectionsScreenState extends State<CameraDetectionsScreen> {
         final latestDetection = snapshot.docs.first;
         final data = latestDetection.data() as Map<String, dynamic>;
 
-        // Send notification
-        showNotification(
-          title: 'New Detection',
-          body: 'A new detection has arrived: ${data['label']}',
-        );
+        // Check if verified and adminReply are false
+        final bool isVerified = data['verified'] ?? false;
+        final bool adminReply = data['adminReply'] ?? false;
 
-        // Play alert sound
-        playAlertSound();
+        if (!isVerified && !adminReply && !_hasPlayedSound) {
+          // Send notification
+          showNotification(
+            title: 'New Detection',
+            body: 'A new detection has arrived: ${data['label']}',
+          );
+
+          // Play alert sound
+          _playAlertSound();
+          _hasPlayedSound = true; // Prevent playing sound multiple times
+        }
       }
     });
+  }
+
+  Future<void> _playAlertSound() async {
+    try {
+      await _audioPlayer
+          .play(AssetSource('alert_sound.mp3')); // Play the alert sound
+    } catch (e) {
+      print('Error playing sound: $e');
+    }
   }
 
   @override

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:video_player/video_player.dart';
+import 'package:audioplayers/audioplayers.dart'; // For playing sounds
 
 class AlertNotification extends StatefulWidget {
   @override
@@ -11,6 +12,20 @@ class AlertNotification extends StatefulWidget {
 
 class _AlertNotificationState extends State<AlertNotification> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final AudioPlayer _audioPlayer = AudioPlayer(); // Audio player for alert sound
+  final Set<String> _triggeredAlerts = {}; // Track alerts that have already triggered
+
+  @override
+  void initState() {
+    super.initState();
+    _audioPlayer.setSource(AssetSource('alert_sound.mp3')); // Load the alert sound
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose(); // Dispose the audio player
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +73,21 @@ class _AlertNotificationState extends State<AlertNotification> {
 
             final alerts = snapshot.data!.docs;
 
+            // Check for new alerts with adminReply true and userViewed false
+            for (final doc in alerts) {
+              final data = doc.data() as Map<String, dynamic>;
+              final bool adminReply = data['adminReply'] ?? false;
+              final bool userViewed = data['userViewed'] ?? false;
+              final String documentId = doc.id;
+
+              // Trigger alert only if adminReply is true, userViewed is false, and the alert hasn't been triggered before
+              if (adminReply && !userViewed && !_triggeredAlerts.contains(documentId)) {
+                _playAlertSound(); // Play the alert sound
+                _triggeredAlerts.add(documentId); // Mark as triggered
+                break; // Stop after triggering the first new alert
+              }
+            }
+
             return ListView.builder(
               itemCount: alerts.length,
               itemBuilder: (context, index) {
@@ -80,15 +110,23 @@ class _AlertNotificationState extends State<AlertNotification> {
     );
   }
 
+  Future<void> _playAlertSound() async {
+    try {
+      await _audioPlayer.play(AssetSource('alert_sound.mp3')); // Play the alert sound
+    } catch (e) {
+      print('Error playing sound: $e');
+    }
+  }
+
   Widget _buildAlertCard(QueryDocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
 
     final String label = data['label'] ?? 'Unknown';
     final String? timestamp = data['timestamp'];
     final String location = data['location'] ?? 'Unknown';
-    final String imageUrl =
-        data['image_url'] ?? 'https://via.placeholder.com/80';
+    final String imageUrl = data['image_url'] ?? 'https://via.placeholder.com/80';
     final String videoUrl = data['video_url'] ?? '';
+    final String documentId = doc.id; // Get the document ID
 
     String formattedTime = 'N/A';
     if (timestamp != null) {
@@ -111,8 +149,7 @@ class _AlertNotificationState extends State<AlertNotification> {
             color: Colors.grey.withOpacity(0.2),
             spreadRadius: 2,
             blurRadius: 5,
-            offset: const Offset(0, 3),
-          ),
+            offset: const Offset(0, 3),)
         ],
         border: Border.all(color: Colors.grey.shade300),
       ),
@@ -186,7 +223,10 @@ class _AlertNotificationState extends State<AlertNotification> {
                   Icons.photo_library_outlined, // Changed icon to arrow
                   Colors.white, // Text color
                   Colors.green, // Background color
-                  () => _showImagePopup(context, imageUrl),
+                  () {
+                    _showImagePopup(context, imageUrl);
+                    _updateUserViewed(doc.id); // Update userViewed to true
+                  },
                 ),
               ),
               const SizedBox(width: 16),
@@ -196,7 +236,10 @@ class _AlertNotificationState extends State<AlertNotification> {
                   Icons.video_collection_rounded, // Changed icon to arrow
                   Colors.white, // Text color
                   Colors.blue, // Background color
-                  () => _showVideoPopup(context, videoUrl),
+                  () {
+                    _showVideoPopup(context, videoUrl);
+                    _updateUserViewed(doc.id); // Update userViewed to true
+                  },
                 ),
               ),
             ],
@@ -285,6 +328,12 @@ class _AlertNotificationState extends State<AlertNotification> {
         );
       },
     );
+  }
+
+  Future<void> _updateUserViewed(String documentId) async {
+    await _firestore.collection('detections').doc(documentId).update({
+      'userViewed': true,
+    });
   }
 }
 
