@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:video_player/video_player.dart';
 import 'package:audioplayers/audioplayers.dart'; // For playing sounds
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class AlertNotification extends StatefulWidget {
   @override
@@ -19,6 +20,31 @@ class _AlertNotificationState extends State<AlertNotification> {
   void initState() {
     super.initState();
     _audioPlayer.setSource(AssetSource('alert_sound.mp3')); // Load the alert sound
+    _setupFirebaseMessaging();
+  }
+
+  void _setupFirebaseMessaging() {
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      // Play alert sound when a notification is received in the foreground
+      _audioPlayer.play(AssetSource('alert_sound.mp3'));
+
+      // Show a local notification
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text(message.notification?.title ?? 'New Detection'),
+            content: Text(message.notification?.body ?? 'A new detection has arrived.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+    });
   }
 
   @override
